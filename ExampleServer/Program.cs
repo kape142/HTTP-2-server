@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Security.Cryptography.X509Certificates;
 using lib;
 
 namespace ExampleServer
@@ -8,7 +9,8 @@ namespace ExampleServer
     {
         static void Main(string[] args)
         {
-            Server server = new Server("127.0.0.1");
+            var serverCertificate = new X509Certificate2("Certificate/TcpTLSServer_TemporaryKey.pfx", "1234");
+            Server server = new Server("127.0.0.1", serverCertificate);
 
             /*
             //Zip test

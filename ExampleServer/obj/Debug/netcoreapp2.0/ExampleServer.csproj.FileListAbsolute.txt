@@ -27,3 +27,5 @@ C:\GitRepos\HTTP-2-server\ExampleServer\bin\Debug\netcoreapp2.0\ExampleServer.pd
 C:\GitRepos\HTTP-2-server\ExampleServer\bin\Debug\netcoreapp2.0\lib.dll
 C:\GitRepos\HTTP-2-server\ExampleServer\bin\Debug\netcoreapp2.0\lib.pdb
 C:\GitRepos\HTTP-2-server\ExampleServer\obj\Debug\netcoreapp2.0\ExampleServer.csproj.CopyComplete
+C:\GitRepos\HTTP-2-server\ExampleServer\bin\Debug\netcoreapp2.0\Certificate\TcpTLSServer_TemporaryKey.pfx
+C:\GitRepos\HTTP-2-server\ExampleServer\bin\Debug\netcoreapp2.0\Certificate\server.cer

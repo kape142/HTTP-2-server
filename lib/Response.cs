@@ -76,9 +76,15 @@ namespace lib
                         return NullRequest();
                     }
                 }
+            } else if(req.Type == "HEAD")
+            {
+                Dictionary<string, string> lst = new Dictionary<string, string>();
+                lst.Add("Server", Server.SERVER);
+                return new Response(Server.HTTP1V, Server.NO_CONTENT, lst, new char[0]);
             }
             else
             {
+                Console.WriteLine("Method not allowed: " + req.Type);
                 return new Response(Server.HTTP1V, "405 Method Not Allowed", null, new char[0]);
             }
         }
@@ -99,17 +105,21 @@ namespace lib
 
         private static Response UpgradeToh2c()
         {
-            Dictionary<string, string> lst = new Dictionary<string, string>();
-            lst.Add("Connection", "Upgrade");
-            lst.Add("Upgrade", "h2c");
+            Dictionary<string, string> lst = new Dictionary<string, string>
+            {
+                { "Connection", "Upgrade" },
+                { "Upgrade", "h2c" }
+            };
             char[] d = null;
             return new Response(Server.HTTP1V, Server.SWITCHING_PROTOCOLS, lst, d);
         }
         private static Response UpgradeToh2()
         {
-            Dictionary<string, string> lst = new Dictionary<string, string>();
-            lst.Add("Connection", "Upgrade");
-            lst.Add("Upgrade", "h2");
+            Dictionary<string, string> lst = new Dictionary<string, string>
+            {
+                { "Connection", "Upgrade" },
+                { "Upgrade", "h2" }
+            };
             char[] d = null;
             return new Response(Server.HTTP1V, Server.SWITCHING_PROTOCOLS, lst, d);
         }

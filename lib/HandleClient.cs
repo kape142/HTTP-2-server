@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,14 +14,27 @@ namespace lib
     class HandleClient
     {
         TcpClient tcpClient;
+        SslStream sslStream;
         StreamReader reader;
         StreamWriter writer;
 
-        public void StartThreadForClient(TcpClient tcpClient)
+        public void StartThreadForClient(TcpClient tcpClient, X509Certificate2 certificate)
         {
             this.tcpClient = tcpClient;
-            reader = new StreamReader(tcpClient.GetStream());
-            writer = new StreamWriter(tcpClient.GetStream());
+            try
+            {
+                sslStream = new SslStream(tcpClient.GetStream(), false, App_CertificateValidation);
+                sslStream.AuthenticateAsServer(certificate, false, SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, false);
+                reader = new StreamReader(sslStream);
+                writer = new StreamWriter(sslStream);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Handshake failed... \n" + ex.ToString());
+                tcpClient.Close();
+                return;
+            }
+
             Thread t = new Thread(StartReadingAsync);
             t.Start();
 
@@ -35,8 +51,8 @@ namespace lib
                     Console.WriteLine(req.ToString());
                     Response res = Response.From(req);
                     Console.WriteLine(res.ToString());
-                    Console.WriteLine(res.Data.ToString());
-                    await Task.Run(() => WriteResponse(res));
+                    WriteResponse(res);
+                    //await Task.Run(() => WriteResponse(res));
                 }
                 catch (Exception ex)
                 {
@@ -61,11 +77,13 @@ namespace lib
             writer.Flush();
             writer.Write(r.ToString());
             writer.Flush();
-            //await writer.WriteAsync(r.Data, 0, r.Data.Length);
-            //await writer.FlushAsync();
+            writer.Write(r.Data, 0, r.Data.Length);
+            writer.Flush();
+            
 
+            /*
             int bytesToSend = r.Data.Length;
-            int packageSize = 100;
+            int packageSize = 1200;
 
             while (bytesToSend > 0)
             {
@@ -83,8 +101,15 @@ namespace lib
                 }
             }
             writer.Flush();
+            */
+            
+        }
+        static bool App_CertificateValidation(Object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+        {
+            return true;
         }
     }
-
+    // Skipping validation because of the use of test certificate
     
+
 }
