@@ -7,7 +7,6 @@ namespace ExampleServer
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
             HTTP2Server.Server.test();
         }
     }

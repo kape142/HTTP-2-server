@@ -1,0 +1,14 @@
+C:\Users\KarlPeter\OneDrive - NTNU\Skolearbeid\Datakommunikasjon og Nettverksprogrammering\HTTP-2-server\ExampleServer\bin\Debug\netcoreapp2.0\ExampleServer.deps.json
+C:\Users\KarlPeter\OneDrive - NTNU\Skolearbeid\Datakommunikasjon og Nettverksprogrammering\HTTP-2-server\ExampleServer\bin\Debug\netcoreapp2.0\ExampleServer.runtimeconfig.json
+C:\Users\KarlPeter\OneDrive - NTNU\Skolearbeid\Datakommunikasjon og Nettverksprogrammering\HTTP-2-server\ExampleServer\bin\Debug\netcoreapp2.0\ExampleServer.runtimeconfig.dev.json
+C:\Users\KarlPeter\OneDrive - NTNU\Skolearbeid\Datakommunikasjon og Nettverksprogrammering\HTTP-2-server\ExampleServer\bin\Debug\netcoreapp2.0\ExampleServer.dll
+C:\Users\KarlPeter\OneDrive - NTNU\Skolearbeid\Datakommunikasjon og Nettverksprogrammering\HTTP-2-server\ExampleServer\bin\Debug\netcoreapp2.0\ExampleServer.pdb
+C:\Users\KarlPeter\OneDrive - NTNU\Skolearbeid\Datakommunikasjon og Nettverksprogrammering\HTTP-2-server\ExampleServer\bin\Debug\netcoreapp2.0\lib.dll
+C:\Users\KarlPeter\OneDrive - NTNU\Skolearbeid\Datakommunikasjon og Nettverksprogrammering\HTTP-2-server\ExampleServer\bin\Debug\netcoreapp2.0\lib.pdb
+C:\Users\KarlPeter\OneDrive - NTNU\Skolearbeid\Datakommunikasjon og Nettverksprogrammering\HTTP-2-server\ExampleServer\obj\Debug\netcoreapp2.0\ExampleServer.csprojResolveAssemblyReference.cache
+C:\Users\KarlPeter\OneDrive - NTNU\Skolearbeid\Datakommunikasjon og Nettverksprogrammering\HTTP-2-server\ExampleServer\obj\Debug\netcoreapp2.0\ExampleServer.csproj.CoreCompileInputs.cache
+C:\Users\KarlPeter\OneDrive - NTNU\Skolearbeid\Datakommunikasjon og Nettverksprogrammering\HTTP-2-server\ExampleServer\obj\Debug\netcoreapp2.0\ExampleServer.AssemblyInfoInputs.cache
+C:\Users\KarlPeter\OneDrive - NTNU\Skolearbeid\Datakommunikasjon og Nettverksprogrammering\HTTP-2-server\ExampleServer\obj\Debug\netcoreapp2.0\ExampleServer.AssemblyInfo.cs
+C:\Users\KarlPeter\OneDrive - NTNU\Skolearbeid\Datakommunikasjon og Nettverksprogrammering\HTTP-2-server\ExampleServer\obj\Debug\netcoreapp2.0\ExampleServer.csproj.CopyComplete
+C:\Users\KarlPeter\OneDrive - NTNU\Skolearbeid\Datakommunikasjon og Nettverksprogrammering\HTTP-2-server\ExampleServer\obj\Debug\netcoreapp2.0\ExampleServer.dll
+C:\Users\KarlPeter\OneDrive - NTNU\Skolearbeid\Datakommunikasjon og Nettverksprogrammering\HTTP-2-server\ExampleServer\obj\Debug\netcoreapp2.0\ExampleServer.pdb
