@@ -9,4 +9,10 @@
     <ProjectReference Include="..\lib\lib.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="WebApp\index.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

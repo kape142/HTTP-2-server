@@ -7,3 +7,12 @@ C:\Users\Martin Wangen\source\repos\HTTP-2-server\lib\obj\Debug\netcoreapp2.0\li
 C:\Users\Martin Wangen\source\repos\HTTP-2-server\lib\obj\Debug\netcoreapp2.0\lib.AssemblyInfo.cs
 C:\Users\Martin Wangen\source\repos\HTTP-2-server\lib\obj\Debug\netcoreapp2.0\lib.dll
 C:\Users\Martin Wangen\source\repos\HTTP-2-server\lib\obj\Debug\netcoreapp2.0\lib.pdb
+C:\GitRepos\HTTP-2-server\lib\bin\Debug\netcoreapp2.0\lib.deps.json
+C:\GitRepos\HTTP-2-server\lib\bin\Debug\netcoreapp2.0\lib.dll
+C:\GitRepos\HTTP-2-server\lib\bin\Debug\netcoreapp2.0\lib.pdb
+C:\GitRepos\HTTP-2-server\lib\obj\Debug\netcoreapp2.0\lib.csprojResolveAssemblyReference.cache
+C:\GitRepos\HTTP-2-server\lib\obj\Debug\netcoreapp2.0\lib.csproj.CoreCompileInputs.cache
+C:\GitRepos\HTTP-2-server\lib\obj\Debug\netcoreapp2.0\lib.AssemblyInfoInputs.cache
+C:\GitRepos\HTTP-2-server\lib\obj\Debug\netcoreapp2.0\lib.AssemblyInfo.cs
+C:\GitRepos\HTTP-2-server\lib\obj\Debug\netcoreapp2.0\lib.dll
+C:\GitRepos\HTTP-2-server\lib\obj\Debug\netcoreapp2.0\lib.pdb

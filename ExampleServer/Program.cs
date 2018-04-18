@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using HTTP2Server;
 using lib;
 
 namespace ExampleServer
@@ -9,9 +8,9 @@ namespace ExampleServer
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
-            HTTP2Server.Server.test();
+            Server server = new Server("127.0.0.1");
 
+            /*
             //Zip test
             DirectoryInfo di = new DirectoryInfo(@"C:\Users\Martin Wangen\source\repos\HTTP-2-server\ExampleServer\WebApp\");
             FileInfo fi = new FileInfo(@"C:\Users\Martin Wangen\source\repos\HTTP-2-server\ExampleServer\WebApp\temp\index.html.gz");
@@ -20,6 +19,7 @@ namespace ExampleServer
 
 
             Console.ReadLine();
+            */
         }
     }
 }
