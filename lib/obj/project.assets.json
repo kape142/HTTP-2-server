@@ -827,25 +827,25 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\jonev\\.nuget\\packages\\": {},
+    "C:\\Users\\Martin Wangen\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackagesFallback\\": {},
     "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\GitRepos\\HTTP-2-server\\lib\\lib.csproj",
+      "projectUniqueName": "C:\\Users\\Martin Wangen\\source\\repos\\HTTP-2-server\\lib\\lib.csproj",
       "projectName": "lib",
-      "projectPath": "C:\\GitRepos\\HTTP-2-server\\lib\\lib.csproj",
-      "packagesPath": "C:\\Users\\jonev\\.nuget\\packages\\",
-      "outputPath": "C:\\GitRepos\\HTTP-2-server\\lib\\obj\\",
+      "projectPath": "C:\\Users\\Martin Wangen\\source\\repos\\HTTP-2-server\\lib\\lib.csproj",
+      "packagesPath": "C:\\Users\\Martin Wangen\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\Martin Wangen\\source\\repos\\HTTP-2-server\\lib\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackagesFallback\\",
         "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
       ],
       "configFilePaths": [
-        "C:\\Users\\jonev\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\Martin Wangen\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.Fallback.config"
       ],
