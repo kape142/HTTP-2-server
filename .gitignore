@@ -3,5 +3,7 @@
 ################################################################################
 
 /.vs
+/.idea
 /ExampleServer/bin/Debug/netcoreapp2.0
 /lib/bin/Debug/netcoreapp2.0
+

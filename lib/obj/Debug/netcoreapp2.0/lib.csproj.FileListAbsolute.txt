@@ -1,9 +1,0 @@
-C:\Users\KarlPeter\OneDrive - NTNU\Skolearbeid\Datakommunikasjon og Nettverksprogrammering\HTTP-2-server\lib\bin\Debug\netcoreapp2.0\lib.deps.json
-C:\Users\KarlPeter\OneDrive - NTNU\Skolearbeid\Datakommunikasjon og Nettverksprogrammering\HTTP-2-server\lib\bin\Debug\netcoreapp2.0\lib.dll
-C:\Users\KarlPeter\OneDrive - NTNU\Skolearbeid\Datakommunikasjon og Nettverksprogrammering\HTTP-2-server\lib\bin\Debug\netcoreapp2.0\lib.pdb
-C:\Users\KarlPeter\OneDrive - NTNU\Skolearbeid\Datakommunikasjon og Nettverksprogrammering\HTTP-2-server\lib\obj\Debug\netcoreapp2.0\lib.csprojResolveAssemblyReference.cache
-C:\Users\KarlPeter\OneDrive - NTNU\Skolearbeid\Datakommunikasjon og Nettverksprogrammering\HTTP-2-server\lib\obj\Debug\netcoreapp2.0\lib.csproj.CoreCompileInputs.cache
-C:\Users\KarlPeter\OneDrive - NTNU\Skolearbeid\Datakommunikasjon og Nettverksprogrammering\HTTP-2-server\lib\obj\Debug\netcoreapp2.0\lib.AssemblyInfoInputs.cache
-C:\Users\KarlPeter\OneDrive - NTNU\Skolearbeid\Datakommunikasjon og Nettverksprogrammering\HTTP-2-server\lib\obj\Debug\netcoreapp2.0\lib.AssemblyInfo.cs
-C:\Users\KarlPeter\OneDrive - NTNU\Skolearbeid\Datakommunikasjon og Nettverksprogrammering\HTTP-2-server\lib\obj\Debug\netcoreapp2.0\lib.dll
-C:\Users\KarlPeter\OneDrive - NTNU\Skolearbeid\Datakommunikasjon og Nettverksprogrammering\HTTP-2-server\lib\obj\Debug\netcoreapp2.0\lib.pdb
