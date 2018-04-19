@@ -23,6 +23,7 @@ namespace lib
         private X509Certificate2 Certificate;
 
         public Server(string ipAddress, X509Certificate2 certificate = null)
+        /*
         Dictionary<string, Func<HTTPRequest, HTTPResponse>> restLibrary = new Dictionary<string, Func<HTTPRequest, HTTPResponse>>();
 
         public void Get(string path, Func<HTTPRequest, HTTPResponse> callback)
@@ -33,7 +34,7 @@ namespace lib
         public void Post(string path, Func<HTTPRequest, HTTPResponse> callback)
         {
             restLibrary.Add("POST/" + path, callback);
-        }
+        }*/
 
         public static void test()
         {
@@ -69,6 +70,9 @@ namespace lib
                 }
 
             }
+        }
+
+        public static void testFrame(){
             var fc = new Frame(8577);
             Console.WriteLine(fc.ToString());
 
@@ -78,7 +82,6 @@ namespace lib
                 Console.Write($"{b} ");
             Console.WriteLine();
             Console.WriteLine(fc.ToString());
-
         }
     }
 }
