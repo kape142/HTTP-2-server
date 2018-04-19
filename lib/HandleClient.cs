@@ -15,18 +15,30 @@ namespace lib
     {
         TcpClient tcpClient;
         SslStream sslStream;
-        StreamReader reader;
-        StreamWriter writer;
+        StreamReader streamReader;
+        StreamWriter streamWriter;
+        BinaryReader binaryReader;
+        bool HttpUpgraded = false;
 
-        public void StartThreadForClient(TcpClient tcpClient, X509Certificate2 certificate)
+        public void StartThreadForClient(TcpClient tcpClient, X509Certificate2 certificate = null)
         {
             this.tcpClient = tcpClient;
             try
             {
-                sslStream = new SslStream(tcpClient.GetStream(), false, App_CertificateValidation);
-                sslStream.AuthenticateAsServer(certificate, false, SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, false);
-                reader = new StreamReader(sslStream);
-                writer = new StreamWriter(sslStream);
+                if(certificate != null)
+                {
+                    sslStream = new SslStream(tcpClient.GetStream(), false, App_CertificateValidation);
+                    sslStream.AuthenticateAsServer(certificate, false, SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, false);
+                    streamReader = new StreamReader(sslStream);
+                    streamWriter = new StreamWriter(sslStream);
+                    binaryReader = new BinaryReader(sslStream);
+                }
+                else
+                {
+                    streamReader = new StreamReader(tcpClient.GetStream());
+                    streamWriter = new StreamWriter(tcpClient.GetStream());
+                    binaryReader = new BinaryReader(tcpClient.GetStream());
+                }
             }
             catch (Exception ex)
             {
@@ -44,10 +56,10 @@ namespace lib
         {
             while (true)
             {
-                string s = await ReadStream();
+                string s = await ReadStreamToString();
                 try
                 {
-                    Request req = new Request(s);
+                    HTTP1Request req = new HTTP1Request(s);
                     Console.WriteLine(req.ToString());
                     Response res = Response.From(req);
                     Console.WriteLine(res.ToString());
@@ -62,26 +74,39 @@ namespace lib
             }
         }
 
-        private async Task<string> ReadStream()
+        private async Task<string> ReadStreamToString()
         {
             string msg = "";
-            while (reader.Peek() != -1)
+            while (streamReader.Peek() != -1)
             {
-                msg += await reader.ReadLineAsync() + "\n";
+                msg += await streamReader.ReadLineAsync() + "\n";
             }
             return msg;
         }
 
-        private void WriteResponse(Response r)
+        private async Task<byte[]> ReadStreamToFrameBytes()
         {
-            writer.Flush();
-            writer.Write(r.ToString());
-            writer.Flush();
-            writer.Write(r.Data, 0, r.Data.Length);
-            writer.Flush();
+            // todo
+            byte[] blength = binaryReader.ReadBytes(3);
             
 
-            /*
+            while (streamReader.Peek() != -1)
+            {
+
+            }
+            return null;
+        }
+
+        private void WriteResponse(Response r)
+        {
+            streamWriter.Flush();
+            streamWriter.Write(r.ToString());
+            streamWriter.Flush();
+            streamWriter.Write(r.Data, 0, r.Data.Length);
+            streamWriter.Flush();
+            
+
+            /****
             int bytesToSend = r.Data.Length;
             int packageSize = 1200;
 
@@ -104,12 +129,13 @@ namespace lib
             */
             
         }
+        // Skipping validation because of the use of test certificate
         static bool App_CertificateValidation(Object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
             return true;
         }
     }
-    // Skipping validation because of the use of test certificate
+    
     
 
 }

@@ -4,14 +4,14 @@ using System.Text;
 
 namespace lib
 {
-    class Request
+    class HTTP1Request
     {
         public string Type { get; private set; }
         public string HttpUrl { get; private set; }
         public string Httpv { get; set; }
         public IDictionary<string, string> HeaderLines { get; set; }
 
-        public Request(string data)
+        public HTTP1Request(string data)
         {
             if (data.Length < 5) throw new ArgumentException("The request does not contains enough data");
             HeaderLines = new Dictionary<string, string>();
