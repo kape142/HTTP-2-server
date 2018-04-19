@@ -23,7 +23,7 @@ namespace lib
             {
                 case "HTTP/1.0":
                 case "HTTP/1.1":
-                    if (req.HeaderLines.ContainsKey("Upgrade"))
+                    if (req.IsUpgradeTo2)
                     {
                         return DoUppgrade(req);
                     }
@@ -199,7 +199,7 @@ namespace lib
                 { "Connection", "Upgrade" },
                 { "Upgrade", "h2c" }
             };
-            char[] d = null;
+            char[] d = new char[0];
             return new Response(Server.HTTP1V, Server.SWITCHING_PROTOCOLS, lst, d);
         }
         private static Response GetResponseForUpgradeToh2()
@@ -209,21 +209,21 @@ namespace lib
                 { "Connection", "Upgrade" },
                 { "Upgrade", "h2" }
             };
-            char[] d = null;
+            char[] d = new char[0];
             return new Response(Server.HTTP1V, Server.SWITCHING_PROTOCOLS, lst, d);
         }
 
         public override string ToString()
         {
-            string ret = HTTPv + " " + Status + "\n";
+            string ret = HTTPv + " " + Status + "\r\n";
             if (HeaderLines != null)
             {
                 foreach (var item in HeaderLines)
                 {
-                    ret += item.Key + " : " + item.Value + "\n";
+                    ret += item.Key + " : " + item.Value + "\r\n";
                 }
             }
-            return ret;
+            return ret + "\r\n"; ;
         }
     }
 }

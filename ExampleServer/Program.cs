@@ -9,9 +9,9 @@ namespace ExampleServer
     {
         static void Main(string[] args)
         {
-            var serverCertificate = new X509Certificate2("Certificate/TcpTLSServer_TemporaryKey.pfx", "1234");
-            Server server = new Server("10.22.190.99", null);
-            // Server server = new Server("10.22.190.99", serverCertificate);
+            //var serverCertificate = new X509Certificate2("Certificate/TcpTLSServer_TemporaryKey.pfx", "1234");
+            Server server = new Server("10.0.0.142", null);
+            //Server server = new Server("10.0.0.142", serverCertificate);
 
             /*
             //Zip test

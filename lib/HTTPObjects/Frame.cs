@@ -4,7 +4,7 @@ using System.Text;
 
 namespace lib.HTTPObjects
 {
-    class Frame
+    class HTTP2Frame
     {
         private static readonly bool littleEndian = BitConverter.IsLittleEndian;
         private static readonly int headerSize = 9;
@@ -57,12 +57,12 @@ namespace lib.HTTPObjects
         private byte[] byteArray;
        
 
-        public Frame(byte[] byteArray)
+        public HTTP2Frame(byte[] byteArray)
         {
             this.byteArray = byteArray;
         }
 
-        public Frame(int streamIdentifier)
+        public HTTP2Frame(int streamIdentifier)
         {
             streamIdentifier = (int)Math.Abs(streamIdentifier);
             var array = new byte[headerSize];
@@ -155,7 +155,7 @@ namespace lib.HTTPObjects
             return s.ToString();
         }
 
-        public Frame addSettingsPayload(byte flag, Tuple<short, int>[] settings)
+        public HTTP2Frame addSettingsPayload(byte flag, Tuple<byte, int>[] settings)
         {
             int length = settings.Length * 6;
             if (length > maxFrameSize)
