@@ -20,11 +20,15 @@ namespace HTTP2Server
 
         public static void test()
         {
-            var fc = new Frame();
-            Console.WriteLine();
-            var settingsframe = fc.createSettingsFrame(0x0,0x0,new Tuple<short, int>[] {new Tuple<short,int>(Frame.SETTINGS_MAX_FRAME_SIZE,128) });
-            foreach (byte b in settingsframe)
+            var fc = new Frame(8577);
+            Console.WriteLine(fc.ToString());
+
+            fc.addSettingsPayload(0x0,new Tuple<short, int>[] {new Tuple<short,int>(Frame.SETTINGS_MAX_FRAME_SIZE,128) });
+            var by = fc.getBytes();
+            foreach (byte b in by)
                 Console.Write($"{b} ");
+            Console.WriteLine();
+            Console.WriteLine(fc.ToString());
 
         }
     }

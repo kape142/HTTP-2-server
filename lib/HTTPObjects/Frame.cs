@@ -57,6 +57,11 @@ namespace lib.HTTPObjects
         private byte[] byteArray;
        
 
+        public Frame(byte[] byteArray)
+        {
+            this.byteArray = byteArray;
+        }
+
         public Frame(int streamIdentifier)
         {
             streamIdentifier = (int)Math.Abs(streamIdentifier);
@@ -71,12 +76,20 @@ namespace lib.HTTPObjects
             var streamIdentifierArr = BitConverter.GetBytes(streamIdentifier);
             if (littleEndian) Array.Reverse(streamIdentifierArr);
             for (int i = 0; i < 4; i++)
-                array[5 + i] = lengthArr[i];
+                array[5 + i] = streamIdentifierArr[i];
 
             this.byteArray = array;
         }
 
-        public string ToString()
+        public byte[] getBytes()
+        {
+            var b = new byte[byteArray.Length];
+            Array.Copy(byteArray, b, byteArray.Length);
+            return b;
+        }
+
+        
+        public override string ToString()
         {
             StringBuilder s = new StringBuilder();
             StringBuilder payload = new StringBuilder();
@@ -117,6 +130,28 @@ namespace lib.HTTPObjects
                     s.Append("Undefined");
                     break;
             }
+            s.Append(", ");
+            s.Append($"Flag: {byteArray[4]}, ");
+            byte[] lengthArr = new byte[4];
+            for(int i = 0; i < 3;i++)
+            {
+                int j = littleEndian ? 0 : 3;
+                lengthArr[j] = byteArray[i];
+                j += littleEndian ? 1 : -1;
+            }
+            int length = BitConverter.ToInt32(lengthArr,0);
+            s.Append($"Length: {length}, ");
+
+            byte[] sidArr = new byte[4];
+            for (int i = 0; i < 4; i++)
+            {
+                int j = littleEndian ? 0 : 3;
+                lengthArr[j] = byteArray[5+i];
+                j += littleEndian ? 1 : -1;
+            }
+            int sid = BitConverter.ToInt32(lengthArr, 0);
+            s.Append($"Stream identifier: {sid}");
+
             return s.ToString();
         }
 
