@@ -2,6 +2,7 @@
 using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
+using System.Collections.Generic;
 
 namespace lib
 {
@@ -22,6 +23,20 @@ namespace lib
         private X509Certificate2 Certificate;
 
         public Server(string ipAddress, X509Certificate2 certificate = null)
+        /*
+        Dictionary<string, Func<HTTPRequest, HTTPResponse>> restLibrary = new Dictionary<string, Func<HTTPRequest, HTTPResponse>>();
+
+        public void Get(string path, Func<HTTPRequest, HTTPResponse> callback)
+        {
+            restLibrary.Add("GET/"+path, callback);
+        }
+
+        public void Post(string path, Func<HTTPRequest, HTTPResponse> callback)
+        {
+            restLibrary.Add("POST/" + path, callback);
+        }*/
+
+        public static void test()
         {
             IpAddress = ipAddress;
             Port = (certificate == null) ? HTTP_PORT : HTTPS_PORT;
@@ -55,6 +70,18 @@ namespace lib
                 }
 
             }
+        }
+
+        public static void testFrame(){
+            var fc = new Frame(8577);
+            Console.WriteLine(fc.ToString());
+
+            fc.addSettingsPayload(0x0,new Tuple<short, int>[] {new Tuple<short,int>(Frame.SETTINGS_MAX_FRAME_SIZE,128) });
+            var by = fc.getBytes();
+            foreach (byte b in by)
+                Console.Write($"{b} ");
+            Console.WriteLine();
+            Console.WriteLine(fc.ToString());
         }
     }
 }
