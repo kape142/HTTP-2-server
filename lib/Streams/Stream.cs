@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-
+using lib.HTTPObjects;
 namespace lib
 {
     public enum StreamState
@@ -21,14 +21,17 @@ namespace lib
         {
             get;
         }
-        public uint Priority
-        {
-            get; set;
-        }
-        public StreamState State
-        {
-            get;set;
-        }
+        public uint Weight{get; set;} = 16;
+        public List<Stream> dependencies;
+        public uint Dependency { get; set; } = 0;
+        public List<Frame> frames;
+
+
+        public StreamState State { get; set; } = StreamState.Idle;
+
+        public Stream() { }
+        
+        public Stream(uint id){Id = id;}
 
         //TODO
         void close()
