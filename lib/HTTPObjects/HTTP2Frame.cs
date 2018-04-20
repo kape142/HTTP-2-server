@@ -260,7 +260,7 @@ namespace lib.HTTPObjects
             byte flag = (byte)((end_stream ? END_STREAM : NO_FLAG) | (end_headers ? END_HEADERS : NO_FLAG) | ((paddingLength!=0x0)?PADDED:NO_FLAG));
             Type = HEADERS;
             Flag = flag;
-            var array = new byte[data.Length + paddingLength];
+            var array = new byte[data.Length + paddingLength + ((paddingLength > 0) ? 1 : 0)];
             if (paddingLength > 0)
                 array[0] = paddingLength;
 
@@ -276,7 +276,7 @@ namespace lib.HTTPObjects
             byte flag = (byte)((end_stream ? END_STREAM : NO_FLAG) | (end_headers ? END_HEADERS : NO_FLAG) | ((paddingLength != 0x0) ? PADDED : NO_FLAG) | PRIORITY_FLAG);
             Type = HEADERS;
             Flag = flag;
-            var array = new byte[data.Length + 5 + paddingLength];
+            var array = new byte[data.Length + 5 + paddingLength + ((paddingLength > 0) ? 1 : 0)];
             int EStreamDependency = (int) (exclusive ? streamDependency | 0x80000000 : streamDependency & 0x7fffffff);
             byte[] ESDArr = ConvertToByteArray(EStreamDependency);
             int i = 0;
