@@ -23,20 +23,21 @@ namespace lib
         private X509Certificate2 Certificate;
         public static Dictionary<string, Action<HTTP1Request, Response>> registerdActionsOnUrls;
 
-        
-        /*
-        Dictionary<string, Func<HTTPRequest, HTTPResponse>> restLibrary = new Dictionary<string, Func<HTTPRequest, HTTPResponse>>();
 
-        public void Get(string path, Func<HTTPRequest, HTTPResponse> callback)
+        /*
+        Dictionary<string, Func<HTTPRequest, HTTPResponse>> restLibrary = new Dictionary<string, Action<HTTPRequest, HTTPResponse>>();
+
+        public void Get(string path, Action<HTTPRequest, HTTPResponse> callback)
         {
             restLibrary.Add("GET/"+path, callback);
         }
 
-        public void Post(string path, Func<HTTPRequest, HTTPResponse> callback)
+        public void Post(string path, Action<HTTPRequest, HTTPResponse> callback)
         {
             restLibrary.Add("POST/" + path, callback);
-        }*/
-      
+        }
+        */
+
         public Server(string ipAddress, X509Certificate2 certificate = null)
         {
             registerdActionsOnUrls = new Dictionary<string, Action<HTTP1Request, Response>>();
@@ -76,7 +77,7 @@ namespace lib
                 }
 
             }
-        }*/
+        }
 
         public void Get(string url, Action<HTTP1Request, Response> action)
         {
@@ -84,15 +85,18 @@ namespace lib
         }
 
         public static void testFrame(){
-            var fc = new HTTP2Frame(8577);
-            Console.WriteLine(fc.ToString());
+            var fc = new HTTP2Frame(128).AddHeaderPayload(new byte[6], 16,0x8,true, 0x2, true, false);
+            byte[] bytes = fc.getBytes();
+            foreach(byte b in bytes)
+                Console.WriteLine(Convert.ToString(b, 2).PadLeft(8, '0'));
 
+            /*Console.WriteLine(fc.ToString());
             fc.addSettingsPayload(new Tuple<short, int>[] {new Tuple<short,int>(HTTP2Frame.SETTINGS_MAX_FRAME_SIZE,128) });
             var by = fc.getBytes();
             foreach (byte b in by)
                 Console.Write($"{b} ");
             Console.WriteLine();
-            Console.WriteLine(fc.ToString());
+            Console.WriteLine(fc.ToString());*/
         }
     }
 }

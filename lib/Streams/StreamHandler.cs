@@ -9,7 +9,7 @@ namespace lib.Streams
     {
         List<Stream> OutgoingStreams;
         List<Stream> IncommingStreams;
-        Queue<Frame> framesToSend;
+        Queue<HTTP2Frame> framesToSend;
 
 
         public void addStream(Stream stream)

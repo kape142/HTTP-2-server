@@ -2,6 +2,7 @@
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using lib;
+using lib.HTTPObjects;
 
 namespace ExampleServer
 {
@@ -22,11 +23,7 @@ namespace ExampleServer
                 res.Send(b);
             });
 
-            server.Listen(80);
-
-            var serverCertificate = new X509Certificate2("Certificate/TcpTLSServer_TemporaryKey.pfx", "1234");
-            Server server = new Server("10.24.91.159", null);
-            // Server server = new Server("10.22.190.99", serverCertificate);
+            //server.Listen(80);
 
             /*
             //Zip test
@@ -38,6 +35,9 @@ namespace ExampleServer
 
             Console.ReadLine();
             */
+
+            Server.testFrame();
+
         }
     }
 }
