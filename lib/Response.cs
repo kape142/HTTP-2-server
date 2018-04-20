@@ -5,7 +5,7 @@ using System.Text;
 
 namespace lib
 {
-    class Response
+    public class Response
     {
         public string HTTPv { get; private set; }
         public string Status { get; private set; }
@@ -26,6 +26,13 @@ namespace lib
                     if (req.IsUpgradeTo2)
                     {
                         return DoUppgrade(req);
+                    }
+                    if (Server.registerdActionsOnUrls.ContainsKey("/" + req.HttpUrl))
+                    {
+                        Action<HTTP1Request, Response> a = Server.registerdActionsOnUrls["/"+ req.HttpUrl];
+                        Response res = new Response(req.Httpv, Server.OK, null, null);
+                        a(req, res);
+                        return res;
                     }
                     switch (req.Type)
                     {
@@ -117,7 +124,10 @@ namespace lib
             */
             #endregion
         }
-
+        public void Send(char[] data)
+        {
+            this.Data = data;
+        }
         private static Response HTTP1Response(HTTP1Request req, bool headrequest=false)
         {
             Console.WriteLine("Responding with http/1.1...");

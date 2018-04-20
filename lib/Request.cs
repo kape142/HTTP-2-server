@@ -4,7 +4,7 @@ using System.Text;
 
 namespace lib
 {
-    class HTTP1Request
+    public class HTTP1Request
     {
         public string Type { get; private set; }
         public string HttpUrl { get; private set; }

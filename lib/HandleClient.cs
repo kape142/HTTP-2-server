@@ -20,14 +20,16 @@ namespace lib
         StreamWriter streamWriter;
         BinaryReader binaryReader;
         BinaryWriter binaryWriter;
+        private object streamreaderlock = new object();
+        private object streamwriterlock = new object();
         bool HttpUpgraded = false;
 
-        public void StartThreadForClient(TcpClient tcpClient, X509Certificate2 certificate = null)
+        public void StartThreadForClient(TcpClient tcpClient, int port, X509Certificate2 certificate = null)
         {
             this.tcpClient = tcpClient;
             try
             {
-                if(certificate != null)
+                if(port == Server.HTTPS_PORT)
                 {
                     sslStream = new SslStream(tcpClient.GetStream(), false, App_CertificateValidation);
                     sslStream.AuthenticateAsServer(certificate, false, SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, false);
@@ -60,7 +62,6 @@ namespace lib
         {
             while (true)
             {
-                //Thread.Sleep(10);
                 if (!HttpUpgraded)
                 {
                     await Task.Run(() => ReadStreamToString((msg) => {
@@ -74,49 +75,65 @@ namespace lib
                         if (req.IsUpgradeTo2)
                         {
                             HttpUpgraded = true;
-                            Tuple<byte, int>[] settings = new Tuple<byte, int>[]
+                            Task.Run(() =>
                             {
-                                Tuple.Create(HTTP2Frame.SETTINGS_MAX_CONCURRENT_STREAMS, 100),
-                                Tuple.Create(HTTP2Frame.SETTINGS_INITIAL_WINDOW_SIZE, Server.MAX_HTTP2_FRAME_SIZE)
-                            };
+                                // start sending file
+
+                            });
+
                             Task.Run(() => {
-                                HTTP2Frame connectionpreface = new HTTP2Frame(0).addSettingsPayload(HTTP2Frame.ACK, new Tuple<byte, int>[0]);
-                                WriteFrame(connectionpreface);
+                                //HTTP2Frame connectionpreface = new HTTP2Frame(0).addSettingsPayload(HTTP2Frame.ACK, new Tuple<byte, int>[0]);
+                                //WriteFrame(connectionpreface);
+                                Tuple<byte, int>[] settings = new Tuple<byte, int>[]
+                                {
+                                    Tuple.Create(HTTP2Frame.SETTINGS_MAX_CONCURRENT_STREAMS, 100),
+                                    Tuple.Create(HTTP2Frame.SETTINGS_INITIAL_WINDOW_SIZE, Server.MAX_HTTP2_FRAME_SIZE)
+                                };
                                 HTTP2Frame firstSettingsframe = new HTTP2Frame(0).addSettingsPayload(0, settings);
                                 Console.WriteLine(firstSettingsframe);
                                 WriteFrame(firstSettingsframe);
                             });
                         }
+                    }, () => {
+                        Thread.Sleep(100);
                     }));
                 }
                 else
                 {
-                  
                     await Task.Run(() => ReadStreamToFrameBytes((framedata) => {
                         HTTP2Frame frame = new HTTP2Frame(framedata);
                         Console.WriteLine(frame.ToString());
+                    }, () => {
+                        Thread.Sleep(100);
                     }));
-
-
                 }
                 
             }
         }
 
-        private async Task ReadStreamToString(Action<string> onRequest)
+        private async Task RespondToHTTP2Get(string url)
+        {
+
+        }
+
+        private async Task ReadStreamToString(Action<string> onRequest, Action onNoRequest)
         {
             string msg = "";
             while (streamReader.Peek() != -1)
             {
-                msg += await streamReader.ReadLineAsync() + "\n";
+                msg += await streamReaderReadLineSync() + "\n";
             }
             if(msg.Length > 5)
             {
                 onRequest(msg);
             }
+            else
+            {
+                onNoRequest();
+            }
         }
 
-        private async Task ReadStreamToFrameBytes(Action<byte[]> framedata)
+        private async Task ReadStreamToFrameBytes(Action<byte[]> framedata, Action onEmptyFrame)
         {
             NetworkStream r = tcpClient.GetStream();
             byte[] myReadBuffer = new byte[3];
@@ -155,8 +172,22 @@ namespace lib
 
                 framedata(data);
             }
+            else
+            {
+                onEmptyFrame();
+            }
             
         }
+
+        private async Task<string> streamReaderReadLineSync()
+        {
+            lock (streamreaderlock)
+            {
+                return streamReader.ReadLine();
+            }
+        }
+
+
 
         private async Task WriteFrame(HTTP2Frame frame)
         {
@@ -167,37 +198,37 @@ namespace lib
         private async Task WriteResponse(Response r)
         {
             if (r == null) return;
-            streamWriter.Flush();
-            await streamWriter.WriteAsync(r.ToString());
+            streamWriterFlushSync();
+            streamWriterWriteSync(r.ToString());
             // streamWriter.Flush();
             if (r.Data == null) return;
-            await streamWriter.WriteAsync(r.Data, 0, r.Data.Length);
+            streamWriterWriteSync(r.Data, 0, r.Data.Length);
             streamWriter.Flush();
-            
-
-            /****
-            int bytesToSend = r.Data.Length;
-            int packageSize = 1200;
-
-            while (bytesToSend > 0)
-            {
-                if (bytesToSend >= packageSize)
-                {
-                    writer.Write(r.Data, (r.Data.Length - bytesToSend), packageSize);
-                    writer.Flush();
-                    bytesToSend -= packageSize;
-                }
-                else
-                {
-                    writer.Write(r.Data, (r.Data.Length - bytesToSend), bytesToSend);
-                    writer.Flush();
-                    bytesToSend -= packageSize;
-                }
-            }
-            writer.Flush();
-            */
-            
         }
+        private void streamWriterWriteSync(string s)
+        {
+            lock (streamwriterlock)
+            {
+                streamWriter.Write(s);
+            }
+        }
+
+        private void streamWriterWriteSync(char[] data, int index, int length)
+        {
+            lock (streamwriterlock)
+            {
+                streamWriter.Write(data, index, length);
+            }
+        }
+
+        private void streamWriterFlushSync()
+        {
+            lock (streamwriterlock)
+            {
+                streamWriter.Flush();
+            }
+        }
+
         // Skipping validation because of the use of test certificate
         static bool App_CertificateValidation(Object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
