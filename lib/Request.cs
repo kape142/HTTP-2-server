@@ -4,12 +4,13 @@ using System.Text;
 
 namespace lib
 {
-    class HTTP1Request
+    public class HTTP1Request
     {
         public string Type { get; private set; }
         public string HttpUrl { get; private set; }
         public string Httpv { get; set; }
         public IDictionary<string, string> HeaderLines { get; set; }
+        public bool IsUpgradeTo2 { get; set; }
 
         public HTTP1Request(string data)
         {
@@ -25,6 +26,7 @@ namespace lib
             {
                 if (lines[i].Length < 5) continue;
                 int split = lines[i].IndexOf(':');
+                if (lines[i].Substring(0, split).Trim() == "Upgrade") IsUpgradeTo2 = true;
                 HeaderLines.Add(lines[i].Substring(0, split).Trim(), lines[i].Substring(split + 1).Trim());
             }
         }
@@ -38,5 +40,7 @@ namespace lib
             }
             return Type + " " + HttpUrl + " " + Httpv + "\n" + ret;
         }
+
+
     }
 }
