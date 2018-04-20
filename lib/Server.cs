@@ -3,6 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Collections.Generic;
+using lib.HTTPObjects;
 
 namespace lib
 {
@@ -22,22 +23,7 @@ namespace lib
         public static int Port { get; private set; }
         private X509Certificate2 Certificate;
 
-        public Server(string ipAddress, X509Certificate2 certificate = null)
-        /*
-        Dictionary<string, Func<HTTPRequest, HTTPResponse>> restLibrary = new Dictionary<string, Func<HTTPRequest, HTTPResponse>>();
-
-        public void Get(string path, Func<HTTPRequest, HTTPResponse> callback)
-        {
-            restLibrary.Add("GET/"+path, callback);
-        }
-
-        public void Post(string path, Func<HTTPRequest, HTTPResponse> callback)
-        {
-            restLibrary.Add("POST/" + path, callback);
-        }*/
-
-        public static void test()
-        {
+        public Server(string ipAddress, X509Certificate2 certificate = null) {
             IpAddress = ipAddress;
             Port = (certificate == null) ? HTTP_PORT : HTTPS_PORT;
             Certificate = certificate;
@@ -71,6 +57,54 @@ namespace lib
 
             }
         }
+        /*
+        Dictionary<string, Func<HTTPRequest, HTTPResponse>> restLibrary = new Dictionary<string, Func<HTTPRequest, HTTPResponse>>();
+
+        public void Get(string path, Func<HTTPRequest, HTTPResponse> callback)
+        {
+            restLibrary.Add("GET/"+path, callback);
+        }
+
+        public void Post(string path, Func<HTTPRequest, HTTPResponse> callback)
+        {
+            restLibrary.Add("POST/" + path, callback);
+        }*/
+
+        /*public static void test()
+        {
+            IpAddress = ipAddress;
+            Port = (certificate == null) ? HTTP_PORT : HTTPS_PORT;
+            Certificate = certificate;
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls;
+            TcpListener tcpListener = null;
+            try
+            {
+                Console.WriteLine($"Server is starting at {IpAddress} on {Port}");
+                IPAddress localAddr = IPAddress.Parse(ipAddress);
+                tcpListener = new TcpListener(localAddr, Port);
+                tcpListener.Start();
+                while (true)
+                {
+                    TcpClient tcpClient = tcpListener.AcceptTcpClient();
+                    HandleClient handleClient = new HandleClient();
+                    handleClient.StartThreadForClient(tcpClient, certificate);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Write(ex);
+                Console.ReadLine();
+            }
+            finally
+            {
+                if (tcpListener != null)
+                {
+                    Console.WriteLine("Listener stopping");
+                    tcpListener.Stop();
+                }
+
+            }
+        }*/
 
         public static void testFrame(){
             var fc = new Frame(8577);

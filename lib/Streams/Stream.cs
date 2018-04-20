@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using lib.HTTPObjects;
-namespace lib
+namespace lib.Streams
 {
     public enum StreamState
     {
@@ -15,6 +15,7 @@ namespace lib
         Closed
 
     }
+
     class Stream
     {
         public uint Id

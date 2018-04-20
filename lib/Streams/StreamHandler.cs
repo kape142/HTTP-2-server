@@ -7,7 +7,8 @@ namespace lib.Streams
 {
     class StreamHandler
     {
-        List<Stream> ActiveStreams;
+        List<Stream> OutgoingStreams;
+        List<Stream> IncommingStreams;
         Queue<Frame> framesToSend;
 
 
@@ -15,11 +16,11 @@ namespace lib.Streams
         {
             if (stream.Dependency == 0)
             {
-                ActiveStreams.Add(stream);
+                OutgoingStreams.Add(stream);
             }
             else 
             {
-                Stream parent = findStreamById(stream.Dependency, ActiveStreams,false);
+                Stream parent = findStreamById(stream.Dependency, OutgoingStreams,false);
                 if(parent != null){
                     parent.dependencies.Add(stream);
                 }
@@ -54,7 +55,7 @@ namespace lib.Streams
 
         void updateStream(Stream stream)
         {
-            Stream streamToUpdate = findStreamById(stream.Id, ActiveStreams, (stream.Dependency != 0));
+            Stream streamToUpdate = findStreamById(stream.Id, OutgoingStreams, (stream.Dependency != 0));
             streamToUpdate.Dependency = stream.Dependency;
             streamToUpdate.Weight = stream.Weight;
             addStream(streamToUpdate);
@@ -63,11 +64,14 @@ namespace lib.Streams
         //Todo: implement weighthandeling to get priorities right
         void getFramesFromStreams()
         {
-            foreach(Stream stream in ActiveStreams)
+            foreach(Stream stream in OutgoingStreams)
             {
                 framesToSend.Enqueue(stream.frames.Dequeue());
             }
         }
+
+        
+
     }
 
 }
