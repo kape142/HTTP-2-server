@@ -74,11 +74,12 @@ namespace lib
         }
 
         public static void testFrame(){
-            var fc = new HTTP2Frame(8577).AddHeaderPayload(new byte[4], true, true, 0x1, true);
-            Console.WriteLine(fc.Flag);
-            Console.WriteLine((0x20 | 0x8) | (0x4 | 0x1));
-            /*Console.WriteLine(fc.ToString());
+            var fc = new HTTP2Frame(128).AddHeaderPayload(new byte[6], 0x2, true, true);
+            byte[] bytes = fc.getBytes();
+            foreach(byte b in bytes)
+                Console.WriteLine(Convert.ToString(b, 2).PadLeft(8, '0'));
 
+            /*Console.WriteLine(fc.ToString());
             fc.addSettingsPayload(new Tuple<short, int>[] {new Tuple<short,int>(HTTP2Frame.SETTINGS_MAX_FRAME_SIZE,128) });
             var by = fc.getBytes();
             foreach (byte b in by)

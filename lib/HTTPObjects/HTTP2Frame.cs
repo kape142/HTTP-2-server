@@ -116,13 +116,13 @@ namespace lib.HTTPObjects
         {
             get
             {
-                return GetPartOfByteArray(9, this.PayloadLength);
+                return GetPartOfByteArray(9, 9+this.PayloadLength);
             }
             private set
             {
                 if (value.Length > maxFrameSize)
                     throw new Exception($"Cannot create frame larger than maxFrameSize, {maxFrameSize}"); //TODO error handling?
-                byte[] b = ConvertTo24BitNumber(value.Length);
+                byte[] b = ConvertToByteArray(value.Length,3);
                 for (int i = 0; i < 3; i++)
                     byteArray[i] = b[i];
 
@@ -255,19 +255,47 @@ namespace lib.HTTPObjects
             return this;
         }
 
-        public HTTP2Frame AddHeaderPayload(byte[] data, bool end_stream = false, bool end_headers = false, byte paddingLength = 0x0, bool priority = false)
+        public HTTP2Frame AddHeaderPayload(byte[] data, byte paddingLength = 0x0, bool end_headers = false, bool end_stream = false)
         {
-            byte flag = (byte)((end_stream ? END_STREAM : NO_FLAG) | (end_headers ? END_HEADERS : NO_FLAG) | ((paddingLength==0x0)?PADDED:NO_FLAG) | (priority? PRIORITY_FLAG:NO_FLAG));
-            Type = DATA;
+            byte flag = (byte)((end_stream ? END_STREAM : NO_FLAG) | (end_headers ? END_HEADERS : NO_FLAG) | ((paddingLength!=0x0)?PADDED:NO_FLAG));
+            Type = HEADERS;
             Flag = flag;
-            Payload = data;
+            var array = new byte[data.Length + paddingLength];
+            if (paddingLength > 0)
+                array[0] = paddingLength;
+
+            for (int i = 0; i < data.Length; i++)
+                array[i+ ((paddingLength > 0) ? 1 : 0)] = data[i];
+
+            Payload = array;
+            return this;
+        }
+
+        public HTTP2Frame AddHeaderPayload(byte[] data, uint streamDependency, byte weight, bool exclusive, byte paddingLength = 0x0, bool end_headers = false, bool end_stream = false)
+        {
+            byte flag = (byte)((end_stream ? END_STREAM : NO_FLAG) | (end_headers ? END_HEADERS : NO_FLAG) | ((paddingLength != 0x0) ? PADDED : NO_FLAG) | PRIORITY_FLAG);
+            Type = HEADERS;
+            Flag = flag;
+            var array = new byte[data.Length + 5 + paddingLength];
+            int EStreamDependency = (int) (exclusive ? streamDependency | 0x80000000 : streamDependency & 0x7fffffff);
+            byte[] ESDArr = ConvertToByteArray(EStreamDependency);
+            int i = 0;
+            if (paddingLength > 0)
+                array[i++] = paddingLength;
+            for (int j = 0; j < 4; j++)
+                array[i++] = ESDArr[j];
+            array[i++] = weight;
+            for (int j = 0; j < data.Length; j++)
+            {
+                array[i++] = data[j];
+            }
+            Payload = array;
             return this;
         }
 
 
         public static int ConvertFromIncompleteByteArray(byte[] array)
         {
-            bool littleEndian = BitConverter.IsLittleEndian;
             byte[] target = new byte[4];
             for (int i = 0; i < array.Length; i++)
             {
@@ -278,13 +306,19 @@ namespace lib.HTTPObjects
             return BitConverter.ToInt32(target, 0);
         }
 
-        public static byte[] ConvertTo24BitNumber(int number)
+        public static byte[] ConvertToByteArray(int number, int bytes = 4)
         {
-            var byteArr = new byte[3];
+            return ConvertToByteArray((long)number, bytes);
+        }
+
+        public static byte[] ConvertToByteArray(long number, int bytes = 4)
+        {
+            if (bytes > 8) throw new Exception("too many bytes requested");
+            var byteArr = new byte[bytes];
             var numArr = BitConverter.GetBytes(number);
             if (littleEndian) Array.Reverse(numArr);
-            for (int j = 0; j < 3; j++)
-                byteArr[j] = numArr[j + 1];
+            for (int j = 0; j < bytes; j++)
+                byteArr[j] = numArr[j + (8-bytes)];
             return byteArr;
         }
 
@@ -296,7 +330,7 @@ namespace lib.HTTPObjects
                 part[i] = byteArray[start + i];
             }
             return part;
-        }
+        }        
     }
 }
 
