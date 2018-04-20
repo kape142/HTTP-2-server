@@ -34,6 +34,12 @@ namespace lib.Streams
         
         public Stream(uint id){Id = id;}
 
+        public void addFrame(Frame frame)
+        {
+            frames.Enqueue(frame);
+        }
+
+
         //TODO
         void close()
         {
