@@ -24,7 +24,7 @@ namespace lib
         public uint Weight{get; set;} = 16;
         public List<Stream> dependencies;
         public uint Dependency { get; set; } = 0;
-        public List<Frame> frames;
+        public Queue<Frame> frames;
 
 
         public StreamState State { get; set; } = StreamState.Idle;
@@ -38,7 +38,5 @@ namespace lib
         {
             State = StreamState.Closed;
         }    
-
-
     }
 }

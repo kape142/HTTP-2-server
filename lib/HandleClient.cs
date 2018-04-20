@@ -8,6 +8,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using lib.Streams;
 
 namespace lib
 {
@@ -19,6 +20,8 @@ namespace lib
         StreamWriter streamWriter;
         BinaryReader binaryReader;
         bool HttpUpgraded = false;
+        StreamHandler streamHandler;
+        
 
         public void StartThreadForClient(TcpClient tcpClient, X509Certificate2 certificate = null)
         {
