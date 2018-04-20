@@ -1,14 +1,16 @@
-﻿using System;
+﻿using lib.Frames;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace lib.HTTPObjects
 {
-    class HTTP2Frame
+    public class HTTP2Frame
     {
         private static readonly bool littleEndian = BitConverter.IsLittleEndian;
         public const int headerSize = 9;
 
+        #region constants
         //Frame Types
         public const byte DATA = 0x0;
         public const byte HEADERS = 0x1;
@@ -30,12 +32,12 @@ namespace lib.HTTPObjects
         public const byte ACK = 0x1;
 
         //Settings Parameters
-        public const byte SETTINGS_HEADER_TABLE_SIZE = 0x1;
-        public const byte SETTINGS_ENABLE_PUSH = 0x2;
-        public const byte SETTINGS_MAX_CONCURRENT_STREAMS = 0x3;
-        public const byte SETTINGS_INITIAL_WINDOW_SIZE = 0x4;
-        public const byte SETTINGS_MAX_FRAME_SIZE = 0x5;
-        public const byte SETTINGS_MAX_HEADER_LIST_SIZE = 0x6;
+        public const short SETTINGS_HEADER_TABLE_SIZE = 0x1;
+        public const short SETTINGS_ENABLE_PUSH = 0x2;
+        public const short SETTINGS_MAX_CONCURRENT_STREAMS = 0x3;
+        public const short SETTINGS_INITIAL_WINDOW_SIZE = 0x4;
+        public const short SETTINGS_MAX_FRAME_SIZE = 0x5;
+        public const short SETTINGS_MAX_HEADER_LIST_SIZE = 0x6;
 
         //Error codes
         public const byte NO_ERROR = 0x0;
@@ -52,7 +54,7 @@ namespace lib.HTTPObjects
         public const byte ENHANCE_YOUR_CALM = 0xb;
         public const byte INADEQUATE_SECURITY = 0xc;
         public const byte HTTP_1_1_REQUIRED = 0xd;
-
+        #endregion
         //Object Variables
         private static int maxFrameSize = 16384;
         private byte[] byteArray;
@@ -116,7 +118,7 @@ namespace lib.HTTPObjects
         {
             get
             {
-                return GetPartOfByteArray(9, 9+this.PayloadLength);
+                return GetPartOfByteArray(9, 9 + this.PayloadLength);
             }
             private set
             {
@@ -294,6 +296,29 @@ namespace lib.HTTPObjects
         }
 
 
+        public HTTP2Frame AddPriorityPayload(bool streamDependencyIsExclusive, int streamDependency, byte weight = 0)
+        {
+            int first32 = PutBoolAndIntTo32bitInt(streamDependencyIsExclusive, streamDependency);
+
+            throw new NotImplementedException();
+        }
+
+        public PriorityPayload GetPriorityPayloadDecoded()
+        {
+            if(Type != PRIORITY_TYPE)
+            {
+                //todo
+            }
+            var split = Split32BitToBoolAnd31bitInt(ConvertFromIncompleteByteArray(GetPartOfPayload(0, 3)));
+            PriorityPayload pp = new PriorityPayload();
+            pp.StreamDependencyIsExclusive = split.bit32;
+            pp.StreamDependency = split.int31;
+            pp.Weight = GetPartOfPayload(4, 5)[0];
+            return pp;
+        }
+
+
+
         public static int ConvertFromIncompleteByteArray(byte[] array)
         {
             byte[] target = new byte[4];
@@ -322,15 +347,39 @@ namespace lib.HTTPObjects
             return byteArr;
         }
 
-        private byte[] GetPartOfByteArray(int start, int end)
+        private byte[] GetPartOfByteArray(int start, int end, byte[] b)
         {
             byte[] part = new byte[end - start];
             for(int i = 0; i< end - start; i++)
             {
-                part[i] = byteArray[start + i];
+                part[i] = b[start + i];
             }
             return part;
-        }        
+        }
+
+        private byte[] GetPartOfByteArray(int start, int end)
+        {
+            return GetPartOfByteArray(start, end, byteArray);
+        }
+
+        private byte[] GetPartOfPayload(int start, int end)
+        {
+            if ((end + headerSize) > byteArray.Length-1) return null;  // todo sjekk denne
+            return GetPartOfByteArray(start + headerSize, end + headerSize, byteArray);
+        }
+
+        public static (bool bit32, int int31) Split32BitToBoolAnd31bitInt(int i)
+        {
+            int _bit32 = (int)(i & 0b10000000000000000000000000000000);
+            bool _bit = (_bit32 == -2147483648) ? true : false;
+            int _uint32 = (int)(i & 0b01111111111111111111111111111111);
+            return (_bit, _uint32);
+        }
+
+        public static int PutBoolAndIntTo32bitInt(bool bit32, int int31)
+        {
+            return bit32 ? (int)(int31 | 0x80000000) : (int)(int31 & 0x7fffffff);
+        }
     }
 }
 

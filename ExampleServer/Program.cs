@@ -11,7 +11,22 @@ namespace ExampleServer
         static void Main(string[] args)
         {
             //var serverCertificate = new X509Certificate2("Certificate/TcpTLSServer_TemporaryKey.pfx", "1234");
-            //Server server = new Server("10.22.190.99", null);
+            Server server = new Server("10.22.190.99", null);
+            //Server server = new Server("10.0.0.142", serverCertificate);
+
+            server.Get("/testurl", (req, res) =>
+            {
+                Console.WriteLine("testurl virker");
+                char[] b = new char[2];
+                b[0] = 'H';
+                b[1] = 'E';
+                res.Send(b);
+            });
+
+            server.Listen(80);
+
+            var serverCertificate = new X509Certificate2("Certificate/TcpTLSServer_TemporaryKey.pfx", "1234");
+            Server server = new Server("10.24.91.159", null);
             // Server server = new Server("10.22.190.99", serverCertificate);
 
             /*
