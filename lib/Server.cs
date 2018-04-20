@@ -87,7 +87,7 @@ namespace lib
             var fc = new HTTP2Frame(8577);
             Console.WriteLine(fc.ToString());
 
-            fc.addSettingsPayload(0x0,new Tuple<byte, int>[] {new Tuple<byte,int>(HTTP2Frame.SETTINGS_MAX_FRAME_SIZE,128) });
+            fc.addSettingsPayload(new Tuple<short, int>[] {new Tuple<short,int>(HTTP2Frame.SETTINGS_MAX_FRAME_SIZE,128) });
             var by = fc.getBytes();
             foreach (byte b in by)
                 Console.Write($"{b} ");

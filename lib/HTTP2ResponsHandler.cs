@@ -1,4 +1,5 @@
-﻿using System;
+﻿using lib.HTTPObjects;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -7,6 +8,35 @@ namespace lib
 {
     class HTTP2ResponsHandler
     {
+        static void Handle(HTTP2Frame frame)
+        {
+            switch (frame.Type)
+            {
+                case HTTP2Frame.DATA:
+                    break;
+                case HTTP2Frame.HEADERS:
+                    break;
+                case HTTP2Frame.PRIORITY_TYPE:
+                    break;
+                case HTTP2Frame.RST_STREAM:
+                    break;
+                case HTTP2Frame.SETTINGS:
+                    break;
+                case HTTP2Frame.PUSH_PROMISE:
+                    break;
+                case HTTP2Frame.PING:
+                    break;
+                case HTTP2Frame.GOAWAY:
+                    break;
+                case HTTP2Frame.WINDOW_UPDATE:
+                    break;
+                case HTTP2Frame.CONTINUATION:
+                    break;
+                default:
+                    break;
+            }
+        }
+
         private byte[] GetFileData(string url)
         {
             String file = null;
