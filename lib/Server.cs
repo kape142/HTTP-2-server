@@ -25,17 +25,18 @@ namespace lib
 
 
         /*
-        Dictionary<string, Func<HTTPRequest, HTTPResponse>> restLibrary = new Dictionary<string, Func<HTTPRequest, HTTPResponse>>();
+        Dictionary<string, Func<HTTPRequest, HTTPResponse>> restLibrary = new Dictionary<string, Action<HTTPRequest, HTTPResponse>>();
 
-        public void Get(string path, Func<HTTPRequest, HTTPResponse> callback)
+        public void Get(string path, Action<HTTPRequest, HTTPResponse> callback)
         {
             restLibrary.Add("GET/"+path, callback);
         }
 
-        public void Post(string path, Func<HTTPRequest, HTTPResponse> callback)
+        public void Post(string path, Action<HTTPRequest, HTTPResponse> callback)
         {
             restLibrary.Add("POST/" + path, callback);
-        }*/
+        }
+        */
 
         public Server(string ipAddress, X509Certificate2 certificate = null)
         {
@@ -76,7 +77,7 @@ namespace lib
                 }
 
             }
-        }*/
+        }
 
         public void Get(string url, Action<HTTP1Request, Response> action)
         {

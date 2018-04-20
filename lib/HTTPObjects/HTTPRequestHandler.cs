@@ -8,7 +8,7 @@ namespace lib.HTTPObjects
 {
     public class HTTPRequestHandler
     {
-        private void GetDataFramesFromFile(Stream stream, string url)
+        private void GetDataFramesFromFile(Streams.Stream stream, string url)
         {
             String file = null;
             if (url == "")
@@ -20,7 +20,7 @@ namespace lib.HTTPObjects
                 file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\" + url;
             }
             FileInfo fi = new FileInfo(file);
-            if (!fi.Exists) return null;
+            if (!fi.Exists) return;
             FileStream fs = fi.OpenRead();
             BinaryReader reader = new BinaryReader(fs);
             long length = fs.Length;
@@ -28,7 +28,7 @@ namespace lib.HTTPObjects
             for(long i = 0;  i<length; i+= HTTP2Frame.SETTINGS_MAX_FRAME_SIZE)
             {
                 reader.Read(d, HTTP2Frame.SETTINGS_MAX_FRAME_SIZE, (int) i);
-                stream.addFrame(new HTTP2Frame(stream.Id).AddDataPayload(d));
+                //stream.AddFrame(new HTTP2Frame((int) stream.Id).AddDataPayload(d));
             }
             int rest = (int) length % HTTP2Frame.SETTINGS_MAX_FRAME_SIZE;
             reader.Read(d, (int)length-rest, rest);
