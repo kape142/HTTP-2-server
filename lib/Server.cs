@@ -23,8 +23,7 @@ namespace lib
         private X509Certificate2 Certificate;
         public static Dictionary<string, Action<HTTP1Request, Response>> registerdActionsOnUrls;
 
-
-        //public Server(string ipAddress, X509Certificate2 certificate = null)
+        
         /*
         Dictionary<string, Func<HTTPRequest, HTTPResponse>> restLibrary = new Dictionary<string, Func<HTTPRequest, HTTPResponse>>();
 
@@ -37,6 +36,7 @@ namespace lib
         {
             restLibrary.Add("POST/" + path, callback);
         }*/
+      
         public Server(string ipAddress, X509Certificate2 certificate = null)
         {
             registerdActionsOnUrls = new Dictionary<string, Action<HTTP1Request, Response>>();
@@ -76,7 +76,7 @@ namespace lib
                 }
 
             }
-        }
+        }*/
 
         public void Get(string url, Action<HTTP1Request, Response> action)
         {

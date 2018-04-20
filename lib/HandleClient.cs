@@ -9,6 +9,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using lib.Streams;
 
 namespace lib
 {
@@ -23,6 +24,8 @@ namespace lib
         private object streamreaderlock = new object();
         private object streamwriterlock = new object();
         bool HttpUpgraded = false;
+        StreamHandler streamHandler;
+        
 
         public void StartThreadForClient(TcpClient tcpClient, int port, X509Certificate2 certificate = null)
         {
