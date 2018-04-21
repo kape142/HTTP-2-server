@@ -78,6 +78,7 @@ namespace lib
                         if (req.IsUpgradeTo2)
                         {
                             HttpUpgraded = true;
+                            streamHandler = new StreamHandler();
                             Task.Run(() =>
                             {
                                 // start sending file
@@ -105,7 +106,17 @@ namespace lib
                 {
                     await Task.Run(() => ReadStreamToFrameBytes((framedata) => {
                         HTTP2Frame frame = new HTTP2Frame(framedata);
-                        Console.WriteLine(frame.ToString());
+                        if (streamHandler.Exist(frame.StreamIdentifier))
+                        {
+
+                        }
+                        else
+                        {
+                            streamHandler.addStream(new HTTP2Stream((uint)frame.StreamIdentifier, StreamState.Open));
+                            
+                        }
+                        // HTTP2ResponsHandler.Handle(frame);
+                        // Console.WriteLine(frame.ToString());
 
                     }, () => {
                         Thread.Sleep(100);
@@ -191,8 +202,6 @@ namespace lib
             }
         }
 
-
-
         private async Task WriteFrame(HTTP2Frame frame)
         {
             binaryWriter.Flush();
@@ -209,6 +218,7 @@ namespace lib
             streamWriterWriteSync(r.Data, 0, r.Data.Length);
             streamWriter.Flush();
         }
+
         private void streamWriterWriteSync(string s)
         {
             lock (streamwriterlock)
