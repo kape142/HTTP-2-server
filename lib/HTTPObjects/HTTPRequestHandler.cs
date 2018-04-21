@@ -8,7 +8,7 @@ namespace lib.HTTPObjects
 {
     public class HTTPRequestHandler
     {
-        private void GetDataFramesFromFile(Streams.Stream stream, string url)
+        private void GetDataFramesFromFile(Streams.HTTP2Stream stream, string url)
         {
             String file = null;
             if (url == "")

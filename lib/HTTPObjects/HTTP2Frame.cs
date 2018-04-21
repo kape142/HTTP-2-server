@@ -15,6 +15,9 @@ namespace lib.HTTPObjects
         public const byte DATA = 0x0;
         public const byte HEADERS = 0x1;
         public const byte PRIORITY_TYPE = 0x2;
+
+       
+
         public const byte RST_STREAM = 0x3;
         public const byte SETTINGS = 0x4;
         public const byte PUSH_PROMISE = 0x5;
@@ -90,6 +93,21 @@ namespace lib.HTTPObjects
             }
         }
 
+        public bool EndStream {
+            get
+            {
+                return ((Flag & END_STREAM) > 0);
+            }
+        }
+
+        public bool EndHeaders
+        {
+            get
+            {
+                return ((Flag & END_HEADERS) > 0);
+            }
+        }
+
         public int PayloadLength
         {
             get
@@ -135,8 +153,6 @@ namespace lib.HTTPObjects
                 byteArray = frame;
             }
         }
-        
-
 
         public HTTP2Frame(byte[] byteArray)
         {
@@ -309,6 +325,22 @@ namespace lib.HTTPObjects
             return this;
         }
 
+        internal HeaderPayload GetHeaderPayloadDekoded()
+        {
+            if(Type != HEADERS)
+            {
+                // todo
+            }
+            HeaderPayload hp = new HeaderPayload();
+            hp.PadLength = GetPartOfPayload(0, 1)[0];
+            var temp = Split32BitToBoolAnd31bitInt(ConvertFromIncompleteByteArray(GetPartOfPayload(1, 4)));
+            hp.StreamDependencyIsExclusive = temp.bit32;
+            hp.StreamDependency = temp.int31;
+            hp.Weight = GetPartOfPayload(5, 6)[0];
+            hp.headerBlockFragment.bytearray = GetPartOfPayload(6, PayloadLength - hp.PadLength);
+            return hp;
+        }
+
         public PriorityPayload GetPriorityPayloadDecoded()
         {
             if(Type != PRIORITY_TYPE)
@@ -322,8 +354,6 @@ namespace lib.HTTPObjects
             pp.Weight = GetPartOfPayload(4, 5)[0];
             return pp;
         }
-
-
 
         public static int ConvertFromIncompleteByteArray(byte[] array)
         {
