@@ -299,8 +299,14 @@ namespace lib.HTTPObjects
         public HTTP2Frame AddPriorityPayload(bool streamDependencyIsExclusive, int streamDependency, byte weight = 0)
         {
             int first32 = PutBoolAndIntTo32bitInt(streamDependencyIsExclusive, streamDependency);
-
-            throw new NotImplementedException();
+            byte[] first32Arr = ConvertToByteArray(first32);
+            byte[] array = new byte[5];
+            for(int i = 0; i < 5; i++)
+            {
+                array[i] = (i < 4) ? first32Arr[i] : weight;
+            }
+            Payload = array;
+            return this;
         }
 
         public PriorityPayload GetPriorityPayloadDecoded()
@@ -309,7 +315,7 @@ namespace lib.HTTPObjects
             {
                 //todo
             }
-            var split = Split32BitToBoolAnd31bitInt(ConvertFromIncompleteByteArray(GetPartOfPayload(0, 3)));
+            var split = Split32BitToBoolAnd31bitInt(ConvertFromIncompleteByteArray(GetPartOfPayload(0, 4)));
             PriorityPayload pp = new PriorityPayload();
             pp.StreamDependencyIsExclusive = split.bit32;
             pp.StreamDependency = split.int31;
