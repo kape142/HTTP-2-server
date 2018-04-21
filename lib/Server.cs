@@ -9,19 +9,20 @@ namespace lib
 {
     public class Server
     {
-        public const int HTTPS_PORT = 443;
-        public const string HTTP1V = "HTTP/1.1";
-        public const string SWITCHING_PROTOCOLS = "101 Switching Protocols";
-        public const string OK = "200 OK";
-        public const string NO_CONTENT = "204 No Content";
-        public const string ERROR = "400 Bad Request";
-        public const string SERVER = "prosjekthttp2";
-        public const string DIR = "WebApp";
-        public const int MAX_HTTP2_FRAME_SIZE = 16384;
+        internal const int HTTPS_PORT = 443;
+        internal const string HTTP1V = "HTTP/1.1";
+        internal const string SWITCHING_PROTOCOLS = "101 Switching Protocols";
+        internal const string OK = "200 OK";
+        internal const string NO_CONTENT = "204 No Content";
+        internal const string ERROR = "400 Bad Request";
+        internal const string SERVER = "prosjekthttp2";
+        internal const string DIR = "WebApp";
+        internal const int MAX_HTTP2_FRAME_SIZE = 16384;
         private string IpAddress;
-        public static int Port { get; private set; }
+        internal static Http2.Hpack.Encoder hPackEncoder = new Http2.Hpack.Encoder();
+        internal static int Port { get; private set; }
         private X509Certificate2 Certificate;
-        public static Dictionary<string, Action<HTTP1Request, Response>> registerdActionsOnUrls;
+        internal static Dictionary<string, Action<HTTP1Request, Response>> registerdActionsOnUrls;
 
 
         /*

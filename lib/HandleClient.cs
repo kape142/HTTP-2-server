@@ -78,7 +78,8 @@ namespace lib
                         if (req.IsUpgradeTo2)
                         {
                             HttpUpgraded = true;
-                            streamHandler = new StreamHandler();
+                            streamHandler = new StreamHandler(this);
+                            streamHandler.StartSendThread();
                             Task.Run(() =>
                             {
                                 // start sending file
@@ -94,8 +95,9 @@ namespace lib
                                     Tuple.Create(HTTP2Frame.SETTINGS_INITIAL_WINDOW_SIZE, Server.MAX_HTTP2_FRAME_SIZE)
                                 };
                                 HTTP2Frame firstSettingsframe = new HTTP2Frame(0).addSettingsPayload(settings);
-                                Console.WriteLine(firstSettingsframe);
-                                WriteFrame(firstSettingsframe);
+                                //Console.WriteLine(firstSettingsframe);
+                                //WriteFrame(firstSettingsframe);
+                                streamHandler.RespondWithFirstHTTP2(req.HttpUrl);
                             });
                         }
                     }, () => {
@@ -106,14 +108,14 @@ namespace lib
                 {
                     await Task.Run(() => ReadStreamToFrameBytes((framedata) => {
                         HTTP2Frame frame = new HTTP2Frame(framedata);
-                        if (streamHandler.Exist(frame.StreamIdentifier))
+                        if (streamHandler.IncomingExist(frame.StreamIdentifier))
                         {
-
+                            streamHandler.AddIncomingFrame(frame);
                         }
                         else
                         {
                             streamHandler.addStream(new HTTP2Stream((uint)frame.StreamIdentifier, StreamState.Open));
-                            
+                            streamHandler.AddIncomingFrame(frame);
                         }
                         // HTTP2ResponsHandler.Handle(frame);
                         // Console.WriteLine(frame.ToString());
@@ -125,6 +127,8 @@ namespace lib
                 
             }
         }
+
+        
 
         private async Task RespondToHTTP2Get(string url)
         {
@@ -202,7 +206,7 @@ namespace lib
             }
         }
 
-        private async Task WriteFrame(HTTP2Frame frame)
+        internal async Task WriteFrame(HTTP2Frame frame)
         {
             binaryWriter.Flush();
             binaryWriter.Write(frame.getBytes(), 0, frame.getBytes().Length);

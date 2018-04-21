@@ -12,7 +12,7 @@ namespace ExampleServer
         {
             //var serverCertificate = new X509Certificate2("Certificate/TcpTLSServer_TemporaryKey.pfx", "1234");
             //Server server = new Server("10.22.190.99", null);
-            //Server server = new Server("10.0.0.142", serverCertificate);
+            Server server = new Server("10.0.0.142");
 
             /*
             server.Get("/testurl", (req, res) =>
@@ -24,7 +24,7 @@ namespace ExampleServer
                 res.Send(b);
             });
             */
-            //server.Listen(80);
+            server.Listen(80);
 
             /*
             //Zip test
@@ -37,7 +37,7 @@ namespace ExampleServer
             Console.ReadLine();
             */
 
-            Server.testFrame();
+            //Server.testFrame();
 
         }
     }

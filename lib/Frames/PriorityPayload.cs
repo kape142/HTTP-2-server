@@ -2,9 +2,10 @@
 using System.Collections.Generic;
 using System.Text;
 
+
 namespace lib.Frames
 {
-    public struct PriorityPayload
+    struct PriorityPayload
     {
         public bool StreamDependencyIsExclusive;
         public int StreamDependency;

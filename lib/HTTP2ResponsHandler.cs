@@ -9,7 +9,7 @@ namespace lib
 {
     public class HTTP2ResponsHandler
     {
-        public static void Handle(HTTP2Frame frame)
+        internal static void Handle(HTTP2Frame frame)
         {
             switch (frame.Type)
             {
