@@ -15,7 +15,7 @@ namespace lib.HTTPObjects
         public const byte HEADERS = 0x1;
         public const byte PRIORITY_TYPE = 0x2;
 
-       
+
 
         public const byte RST_STREAM = 0x3;
         public const byte SETTINGS = 0x4;
@@ -71,7 +71,7 @@ namespace lib.HTTPObjects
         }
         public byte Type
         {
-            get{
+            get {
                 return byteArray[3];
             }
             private set
@@ -130,7 +130,7 @@ namespace lib.HTTPObjects
                 return GetPartOfByteArray(0, 9);
             }
         }
-        
+
         public byte[] Payload
         {
             get
@@ -141,14 +141,14 @@ namespace lib.HTTPObjects
             {
                 if (value.Length > maxFrameSize)
                     throw new Exception($"Cannot create frame larger than maxFrameSize, {maxFrameSize}"); //TODO error handling?
-                byte[] b = ConvertToByteArray(value.Length,3);
+                byte[] b = ConvertToByteArray(value.Length, 3);
                 for (int i = 0; i < 3; i++)
                     byteArray[i] = b[i];
 
                 byte[] header = this.Header;
                 byte[] frame = new byte[headerSize + value.Length];
                 for (int i = 0; i < headerSize + value.Length; i++)
-                    frame[i] = (i < headerSize) ? header[i] : value[i-headerSize];
+                    frame[i] = (i < headerSize) ? header[i] : value[i - headerSize];
                 byteArray = frame;
             }
         }
@@ -174,7 +174,7 @@ namespace lib.HTTPObjects
             return b;
         }
 
-        
+
         public override string ToString()
         {
             StringBuilder s = new StringBuilder();
@@ -182,35 +182,34 @@ namespace lib.HTTPObjects
             s.Append("Type: ");
             switch (byteArray[3])
             {
-                case 0x0:
+                case DATA:
                     s.Append("Data");
                     break;
-                case 0x1:
+                case HEADERS:
                     s.Append("Headers");
                     break;
-                case 0x2:
+                case PRIORITY_TYPE:
                     s.Append("Priority");
                     break;
-                case 0x3:
+                case RST_STREAM:
                     s.Append("RST Stream");
                     break;
-                case 0x4:
+                case SETTINGS:
                     s.Append("Settings");
-                    
                     break;
-                case 0x5:
+                case PUSH_PROMISE:
                     s.Append("Push Promise");
                     break;
-                case 0x6:
+                case PING:
                     s.Append("Ping");
                     break;
-                case 0x7:
+                case GOAWAY:
                     s.Append("GoAway");
                     break;
-                case 0x8:
+                case WINDOW_UPDATE:
                     s.Append("Window Update");
                     break;
-                case 0x9:
+                case CONTINUATION:
                     s.Append("Continuation");
                     break;
                 default:
@@ -229,9 +228,9 @@ namespace lib.HTTPObjects
         public HTTP2Frame addSettingsPayload(Tuple<short, int>[] settings, bool ack = false)
         {
             Type = SETTINGS;
-            Flag = ack?ACK:NO_FLAG;
+            Flag = ack ? ACK : NO_FLAG;
 
-            var array = new byte[settings.Length*6];
+            var array = new byte[settings.Length * 6];
             int i = 0;
             foreach (var tuple in settings)
             {
@@ -251,7 +250,7 @@ namespace lib.HTTPObjects
         public HTTP2Frame AddDataPayload(byte[] data, byte paddingLength = 0x0)
         {
             Type = DATA;
-            
+
             if (paddingLength == 0x0)
             {
                 Payload = data;
@@ -271,7 +270,7 @@ namespace lib.HTTPObjects
 
         public HTTP2Frame AddHeaderPayload(byte[] data, byte paddingLength = 0x0, bool end_headers = false, bool end_stream = false)
         {
-            byte flag = (byte)((end_stream ? END_STREAM : NO_FLAG) | (end_headers ? END_HEADERS : NO_FLAG) | ((paddingLength!=0x0)?PADDED:NO_FLAG));
+            byte flag = (byte)((end_stream ? END_STREAM : NO_FLAG) | (end_headers ? END_HEADERS : NO_FLAG) | ((paddingLength != 0x0) ? PADDED : NO_FLAG));
             Type = HEADERS;
             Flag = flag;
             var array = new byte[data.Length + paddingLength + ((paddingLength > 0) ? 1 : 0)];
@@ -279,7 +278,7 @@ namespace lib.HTTPObjects
                 array[0] = paddingLength;
 
             for (int i = 0; i < data.Length; i++)
-                array[i+ ((paddingLength > 0) ? 1 : 0)] = data[i];
+                array[i + ((paddingLength > 0) ? 1 : 0)] = data[i];
 
             Payload = array;
             return this;
@@ -291,7 +290,7 @@ namespace lib.HTTPObjects
             Type = HEADERS;
             Flag = flag;
             var array = new byte[data.Length + 5 + paddingLength + ((paddingLength > 0) ? 1 : 0)];
-            int EStreamDependency = (int) (exclusive ? streamDependency | 0x80000000 : streamDependency & 0x7fffffff);
+            int EStreamDependency = (int)(exclusive ? streamDependency | 0x80000000 : streamDependency & 0x7fffffff);
             byte[] ESDArr = ConvertToByteArray(EStreamDependency);
             int i = 0;
             if (paddingLength > 0)
@@ -313,7 +312,7 @@ namespace lib.HTTPObjects
             int first32 = PutBoolAndIntTo32bitInt(streamDependencyIsExclusive, streamDependency);
             byte[] first32Arr = ConvertToByteArray(first32);
             byte[] array = new byte[5];
-            for(int i = 0; i < 5; i++)
+            for (int i = 0; i < 5; i++)
             {
                 array[i] = (i < 4) ? first32Arr[i] : weight;
             }
@@ -333,7 +332,47 @@ namespace lib.HTTPObjects
 
         public HTTP2Frame AddPushPromisePayload(int promisedStreamId, byte[] data, byte paddingLength = 0x0, bool endHeaders = false)
         {
-            //Flag = ()
+            bool padded = paddingLength > 0;
+            Flag = (byte)((padded ? PADDED : NO_FLAG) & (endHeaders ? END_HEADERS : NO_FLAG));
+            Type = PUSH_PROMISE;
+            Payload = CombineByteArrays(((padded) ? new byte[] { paddingLength } : new byte[] { }),ExtractBytes(promisedStreamId),data);
+            return this;
+        }
+
+        public HTTP2Frame AddPingPayload(long opaqueData = 0)
+        {
+            return this.AddPingPayload(ExtractBytes(opaqueData));
+        }
+
+        public HTTP2Frame AddPingPayload(byte[] opaqueData)
+        {
+            Type = PING;
+            Flag = ACK;
+            Payload = opaqueData;
+            return this;
+        }
+
+        public HTTP2Frame AddGoawayPayload(int lastStreamID, int errorCode, byte[] additionalDebugData)
+        {
+            Type = GOAWAY;
+            Flag = NO_FLAG;
+            Payload = CombineByteArrays(ExtractBytes(lastStreamID), ExtractBytes(errorCode), additionalDebugData);
+            return this;
+        }
+
+        public HTTP2Frame AddWindowUpdateFrame(int windowSizeIncrement)
+        {
+            Type = WINDOW_UPDATE;
+            Flag = NO_FLAG;
+            Payload = ExtractBytes(windowSizeIncrement);
+            return this;
+        }
+
+        public HTTP2Frame AddContinuationFrame(byte[] headerBlockFragment, bool endHeaders = false)
+        {
+            Type = CONTINUATION;
+            Flag = endHeaders ? END_HEADERS : NO_FLAG;
+            Payload = headerBlockFragment;
             return this;
         }
 
