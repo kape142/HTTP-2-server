@@ -247,18 +247,16 @@ namespace lib.HTTPObjects
         }
 
 
-        public HTTP2Frame AddDataPayload(byte[] data, byte paddingLength = 0x0)
+        public HTTP2Frame AddDataPayload(byte[] data, byte paddingLength = 0x0, bool endStream = false)
         {
             Type = DATA;
+            bool padded = paddingLength > 0;
+            Flag = (byte) ((padded ? PADDED : NO_FLAG) | (endStream ? END_STREAM : NO_FLAG));
 
-            if (paddingLength == 0x0)
-            {
+            if (!padded)
                 Payload = data;
-                Flag = NO_FLAG;
-            }
             else
             {
-                Flag = PADDED;
                 var array = new byte[1 + data.Length + paddingLength];
                 array[0] = paddingLength;
                 for (int i = 0; i < data.Length; i++)
@@ -339,15 +337,15 @@ namespace lib.HTTPObjects
             return this;
         }
 
-        public HTTP2Frame AddPingPayload(long opaqueData = 0)
+        public HTTP2Frame AddPingPayload(long opaqueData = 0, bool ack = false)
         {
-            return this.AddPingPayload(ExtractBytes(opaqueData));
+            return this.AddPingPayload(ExtractBytes(opaqueData),ack);
         }
 
-        public HTTP2Frame AddPingPayload(byte[] opaqueData)
+        public HTTP2Frame AddPingPayload(byte[] opaqueData, bool ack = false)
         {
             Type = PING;
-            Flag = ACK;
+            Flag = ack?ACK:NO_FLAG;
             Payload = opaqueData;
             return this;
         }
@@ -512,7 +510,7 @@ namespace lib.HTTPObjects
             return b;
         }
 
-        private byte[] GetPartOfByteArray(int start, int end, byte[] b)
+        public static byte[] GetPartOfByteArray(int start, int end, byte[] b)
         {
             byte[] part = new byte[end - start];
             for(int i = 0; i< end - start; i++)

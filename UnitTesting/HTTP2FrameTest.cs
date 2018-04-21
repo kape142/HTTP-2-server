@@ -2,6 +2,7 @@ using System;
 using Xunit;
 using lib;
 using lib.HTTPObjects;
+using static lib.HTTPObjects.HTTP2Frame;
 
 namespace UnitTest
 {
@@ -13,18 +14,44 @@ namespace UnitTest
         {
             var frame = new HTTP2Frame(8);
             var settings = new Tuple<short, int>[2];
-            settings[0] = new Tuple<short, int>(HTTP2Frame.SETTINGS_INITIAL_WINDOW_SIZE, 0x1000);
-            settings[1] = new Tuple<short, int>(HTTP2Frame.SETTINGS_ENABLE_PUSH, 0x0);
+            settings[0] = new Tuple<short, int>(SETTINGS_INITIAL_WINDOW_SIZE, 0x1000);
+            settings[1] = new Tuple<short, int>(SETTINGS_ENABLE_PUSH, 0x0);
             frame.addSettingsPayload(settings, true);
             byte[] bytes = frame.getBytes();
-            Assert.Equal(12, HTTP2Frame.ConvertFromIncompleteByteArray(new byte[] {bytes[0],bytes[1],bytes[2]}));
-            Assert.Equal(HTTP2Frame.SETTINGS, bytes[3]);
-            Assert.Equal(HTTP2Frame.ACK, bytes[4]);
+            Assert.Equal(12, ConvertFromIncompleteByteArray(GetPartOfByteArray(0,3,bytes)));
+            Assert.Equal(SETTINGS, bytes[3]);
+            Assert.Equal(ACK, bytes[4]);
             Assert.Equal(8, bytes[8]);
-            Assert.Equal(HTTP2Frame.SETTINGS_INITIAL_WINDOW_SIZE, HTTP2Frame.ConvertFromIncompleteByteArray(new byte[] { bytes[9], bytes[10]}));
-            Assert.Equal(0x1000, HTTP2Frame.ConvertFromIncompleteByteArray(new byte[] { bytes[11], bytes[12], bytes[13], bytes[14] }));
-            Assert.Equal(HTTP2Frame.SETTINGS_ENABLE_PUSH, HTTP2Frame.ConvertFromIncompleteByteArray(new byte[] { bytes[15], bytes[16] }));
-            Assert.Equal(0x0, HTTP2Frame.ConvertFromIncompleteByteArray(new byte[] { bytes[17], bytes[18], bytes[19], bytes[20] }));
+            Assert.Equal(SETTINGS_INITIAL_WINDOW_SIZE, ConvertFromIncompleteByteArray(GetPartOfByteArray(9, 11, bytes)));
+            Assert.Equal(0x1000, ConvertFromIncompleteByteArray(GetPartOfByteArray(11, 15, bytes)));
+            Assert.Equal(SETTINGS_ENABLE_PUSH, ConvertFromIncompleteByteArray(GetPartOfByteArray(15, 17, bytes)));
+            Assert.Equal(0x0, ConvertFromIncompleteByteArray(GetPartOfByteArray(17, 21, bytes)));
+        }
+
+        [Fact]
+        public void TestAddDataPayload()
+        {
+            var frame = new HTTP2Frame(127);
+            int data = 174517637;
+            frame.AddDataPayload(ExtractBytes(data), paddingLength:16);
+            byte[] bytes = frame.getBytes();
+            Assert.Equal(21, ConvertFromIncompleteByteArray(GetPartOfByteArray(0, 3, bytes)));
+            Assert.Equal(DATA, bytes[3]);
+            Assert.Equal(PADDED, bytes[4]);
+            Assert.Equal(127, ConvertFromIncompleteByteArray(GetPartOfByteArray(5, 9, bytes)));
+            Assert.Equal(16, bytes[9]);
+            Assert.Equal(data, ConvertFromIncompleteByteArray(GetPartOfByteArray(10, 14, bytes)));
+            Assert.Equal(new byte[16], GetPartOfByteArray(14, 30, bytes));
+
+            frame = new HTTP2Frame(5234);
+            data = 523978457;
+            frame.AddDataPayload(ExtractBytes(data), endStream: true);
+            bytes = frame.getBytes();
+            Assert.Equal(4, ConvertFromIncompleteByteArray(GetPartOfByteArray(0, 3, bytes)));
+            Assert.Equal(DATA, bytes[3]);
+            Assert.Equal(END_STREAM, bytes[4]);
+            Assert.Equal(5234, ConvertFromIncompleteByteArray(GetPartOfByteArray(5,9,bytes)));
+            Assert.Equal(data, ConvertFromIncompleteByteArray(GetPartOfByteArray(9, 13, bytes)));
         }
 
         [Fact]
