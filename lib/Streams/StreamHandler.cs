@@ -34,12 +34,14 @@ namespace lib.Streams
                 if(framesToSend.Count > 0)
                 {
                     // send
-                    HTTP2Frame framtosend = null;
+                    HTTP2Frame frametosend = null;
                     lock (this)
                     {
-                     framtosend = framesToSend.Dequeue();
+                     frametosend = framesToSend.Dequeue();
+                        Console.WriteLine("Sender ramme: ");
+                        Console.WriteLine(frametosend.ToString());
                     }
-                    await Task.Run(() => Client.WriteFrame(framtosend));
+                    await Task.Run(() => Client.WriteFrame(frametosend));
                 }
                 else
                 {
