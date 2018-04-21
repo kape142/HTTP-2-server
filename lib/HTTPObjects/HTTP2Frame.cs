@@ -9,7 +9,6 @@ namespace lib.HTTPObjects
 {
     internal class HTTP2Frame
     {
-        private static readonly bool littleEndian = BitConverter.IsLittleEndian;
         public const int headerSize = 9;
 
         #region constants
@@ -18,7 +17,7 @@ namespace lib.HTTPObjects
         public const byte HEADERS = 0x1;
         public const byte PRIORITY_TYPE = 0x2;
 
-       
+
 
         public const byte RST_STREAM = 0x3;
         public const byte SETTINGS = 0x4;
@@ -74,7 +73,7 @@ namespace lib.HTTPObjects
         }
         public byte Type
         {
-            get{
+            get {
                 return byteArray[3];
             }
             private set
@@ -157,7 +156,7 @@ namespace lib.HTTPObjects
                 return GetPartOfByteArray(0, 9);
             }
         }
-        
+
         public byte[] Payload
         {
             get
@@ -166,24 +165,17 @@ namespace lib.HTTPObjects
             }
             private set
             {
-                try
-                {
-                    if (value.Length > maxFrameSize)
-                        throw new Exception($"Cannot create frame larger than maxFrameSize, {maxFrameSize}"); //TODO error handling?
-                    byte[] b = ConvertToByteArray(value.Length,3);
-                    for (int i = 0; i < 3; i++)
-                        byteArray[i] = b[i];
+                if (value.Length > maxFrameSize)
+                    throw new Exception($"Cannot create frame larger than maxFrameSize, {maxFrameSize}"); //TODO error handling?
+                byte[] b = ConvertToByteArray(value.Length, 3);
+                for (int i = 0; i < 3; i++)
+                    byteArray[i] = b[i];
 
-                    byte[] header = this.Header;
-                    byte[] frame = new byte[headerSize + value.Length];
-                    for (int i = 0; i < headerSize + value.Length; i++)
-                        frame[i] = (i < headerSize) ? header[i] : value[i-headerSize];
-                    byteArray = frame;
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex);
-                }
+                byte[] header = this.Header;
+                byte[] frame = new byte[headerSize + value.Length];
+                for (int i = 0; i < headerSize + value.Length; i++)
+                    frame[i] = (i < headerSize) ? header[i] : value[i - headerSize];
+                byteArray = frame;
             }
         }
 
@@ -195,8 +187,7 @@ namespace lib.HTTPObjects
         public HTTP2Frame(int streamIdentifier)
         {
             var array = new byte[headerSize];
-            var streamIdentifierArr = BitConverter.GetBytes(streamIdentifier);
-            if (littleEndian) Array.Reverse(streamIdentifierArr);
+            var streamIdentifierArr = ExtractBytes(streamIdentifier);
             for (int i = 0; i < 4; i++)
                 array[5 + i] = streamIdentifierArr[i];
             this.byteArray = array;
@@ -209,7 +200,7 @@ namespace lib.HTTPObjects
             return b;
         }
 
-        
+
         public override string ToString()
         {
             StringBuilder s = new StringBuilder();
@@ -217,35 +208,34 @@ namespace lib.HTTPObjects
             s.Append("Type: ");
             switch (byteArray[3])
             {
-                case 0x0:
+                case DATA:
                     s.Append("Data");
                     break;
-                case 0x1:
+                case HEADERS:
                     s.Append("Headers");
                     break;
-                case 0x2:
+                case PRIORITY_TYPE:
                     s.Append("Priority");
                     break;
-                case 0x3:
+                case RST_STREAM:
                     s.Append("RST Stream");
                     break;
-                case 0x4:
+                case SETTINGS:
                     s.Append("Settings");
-                    
                     break;
-                case 0x5:
+                case PUSH_PROMISE:
                     s.Append("Push Promise");
                     break;
-                case 0x6:
+                case PING:
                     s.Append("Ping");
                     break;
-                case 0x7:
+                case GOAWAY:
                     s.Append("GoAway");
                     break;
-                case 0x8:
+                case WINDOW_UPDATE:
                     s.Append("Window Update");
                     break;
-                case 0x9:
+                case CONTINUATION:
                     s.Append("Continuation");
                     break;
                 default:
@@ -264,19 +254,17 @@ namespace lib.HTTPObjects
         public HTTP2Frame addSettingsPayload(Tuple<short, int>[] settings, bool ack = false)
         {
             Type = SETTINGS;
-            Flag = ack?FLAG_ACK:NO_FLAG;
+            Flag = ack ? ACK : NO_FLAG;
 
-            var array = new byte[settings.Length*6];
+            var array = new byte[settings.Length * 6];
             int i = 0;
             foreach (var tuple in settings)
             {
-                var item1bytes = BitConverter.GetBytes(tuple.Item1);
-                if (littleEndian) Array.Reverse(item1bytes);
+                var item1bytes = ConvertToByteArray(tuple.Item1, 2);
                 foreach (byte b in item1bytes)
                     array[i++] = b;
 
-                var item2bytes = BitConverter.GetBytes(tuple.Item2);
-                if (littleEndian) Array.Reverse(item2bytes);
+                var item2bytes = ConvertToByteArray(tuple.Item2, 4);
                 foreach (byte b in item2bytes)
                     array[i++] = b;
             }
@@ -308,7 +296,7 @@ namespace lib.HTTPObjects
 
         public HTTP2Frame AddHeaderPayload(byte[] data, byte paddingLength = 0x0, bool end_headers = false, bool end_stream = false)
         {
-            byte flag = (byte)((end_stream ? FLAG_END_STREAM : NO_FLAG) | (end_headers ? FLAG_END_HEADERS : NO_FLAG) | ((paddingLength!=0x0)?FLAG_PADDED:NO_FLAG));
+            byte flag = (byte)((end_stream ? END_STREAM : NO_FLAG) | (end_headers ? END_HEADERS : NO_FLAG) | ((paddingLength != 0x0) ? PADDED : NO_FLAG));
             Type = HEADERS;
             Flag = flag;
             var array = new byte[data.Length + paddingLength + ((paddingLength > 0) ? 1 : 0)];
@@ -316,7 +304,7 @@ namespace lib.HTTPObjects
                 array[0] = paddingLength;
 
             for (int i = 0; i < data.Length; i++)
-                array[i+ ((paddingLength > 0) ? 1 : 0)] = data[i];
+                array[i + ((paddingLength > 0) ? 1 : 0)] = data[i];
 
             Payload = array;
             return this;
@@ -328,7 +316,7 @@ namespace lib.HTTPObjects
             Type = HEADERS;
             Flag = flag;
             var array = new byte[data.Length + 5 + paddingLength + ((paddingLength > 0) ? 1 : 0)];
-            int EStreamDependency = (int) (exclusive ? streamDependency | 0x80000000 : streamDependency & 0x7fffffff);
+            int EStreamDependency = (int)(exclusive ? streamDependency | 0x80000000 : streamDependency & 0x7fffffff);
             byte[] ESDArr = ConvertToByteArray(EStreamDependency);
             int i = 0;
             if (paddingLength > 0)
@@ -348,43 +336,103 @@ namespace lib.HTTPObjects
         public HTTP2Frame AddPriorityPayload(bool streamDependencyIsExclusive, int streamDependency, byte weight = 0)
         {
             int first32 = PutBoolAndIntTo32bitInt(streamDependencyIsExclusive, streamDependency);
-            byte[] first4 = BitConverter.GetBytes(first32);
-            Payload = CombineByteArrays(first4, new byte[] { weight });
+            byte[] first32Arr = ConvertToByteArray(first32);
+            byte[] array = new byte[5];
+            for (int i = 0; i < 5; i++)
+            {
+                array[i] = (i < 4) ? first32Arr[i] : weight;
+            }
+            Payload = array;
+            Flag = NO_FLAG;
+            Type = PRIORITY_TYPE;
             return this;
         }
 
-        internal HeaderPayload GetHeaderPayloadDekoded()
+        public HTTP2Frame AddRSTStreamPayload(int errorcode)
+        {
+            Flag = NO_FLAG;
+            Type = RST_STREAM;
+            Payload = ExtractBytes(errorcode);
+            return this;
+        }
+
+        public HTTP2Frame AddPushPromisePayload(int promisedStreamId, byte[] data, byte paddingLength = 0x0, bool endHeaders = false)
+        {
+            bool padded = paddingLength > 0;
+            Flag = (byte)((padded ? PADDED : NO_FLAG) & (endHeaders ? END_HEADERS : NO_FLAG));
+            Type = PUSH_PROMISE;
+            Payload = CombineByteArrays(((padded) ? new byte[] { paddingLength } : new byte[] { }),ExtractBytes(promisedStreamId),data);
+            return this;
+        }
+
+        public HTTP2Frame AddPingPayload(long opaqueData = 0)
+        {
+            return this.AddPingPayload(ExtractBytes(opaqueData));
+        }
+
+        public HTTP2Frame AddPingPayload(byte[] opaqueData)
+        {
+            Type = PING;
+            Flag = ACK;
+            Payload = opaqueData;
+            return this;
+        }
+
+        public HTTP2Frame AddGoawayPayload(int lastStreamID, int errorCode, byte[] additionalDebugData)
+        {
+            Type = GOAWAY;
+            Flag = NO_FLAG;
+            Payload = CombineByteArrays(ExtractBytes(lastStreamID), ExtractBytes(errorCode), additionalDebugData);
+            return this;
+        }
+
+        public HTTP2Frame AddWindowUpdateFrame(int windowSizeIncrement)
+        {
+            Type = WINDOW_UPDATE;
+            Flag = NO_FLAG;
+            Payload = ExtractBytes(windowSizeIncrement);
+            return this;
+        }
+
+        public HTTP2Frame AddContinuationFrame(byte[] headerBlockFragment, bool endHeaders = false)
+        {
+            Type = CONTINUATION;
+            Flag = endHeaders ? END_HEADERS : NO_FLAG;
+            Payload = headerBlockFragment;
+            return this;
+        }
+
+        public HeaderPayload GetHeaderPayloadDecoded()
         {
             if(Type != HEADERS)
             {
                 // todo
+                throw new Exception("wrong type of frame requested");
+            }
+            byte[] headerPayload = Payload;
+            int i = 0;
+            bool padded = (Flag & PADDED) > 0;
+            if (padded)
+                i++;
+            bool priority = (Flag & PRIORITY_FLAG) > 0;
+            if (priority)
+                i += 5;
+            int dataLength = headerPayload.Length - i - (padded ? headerPayload[0] : 0);
+            byte[] data = new byte[dataLength];
+            for (int j = 0; j < dataLength; j++)
+            {
+                data[j] = headerPayload[i++];
             }
             HeaderPayload hp = new HeaderPayload();
-            if(FlagPadded && FlagPriority)
+            if (padded) hp.PadLength = GetPartOfPayload(0, 1)[0];
+            if (priority)
             {
-                hp.PadLength = GetPartOfPayload(0, 1)[0];
                 var temp = Split32BitToBoolAnd31bitInt(ConvertFromIncompleteByteArray(GetPartOfPayload(1, 4)));
                 hp.StreamDependencyIsExclusive = temp.bit32;
                 hp.StreamDependency = temp.int31;
                 hp.Weight = GetPartOfPayload(5, 6)[0];
-                hp.headerBlockFragment.bytearray = GetPartOfPayload(6, PayloadLength - hp.PadLength);
-                return hp;
-            } else if (FlagPadded)
-            {
-                hp.PadLength = GetPartOfPayload(0, 1)[0];
-                hp.headerBlockFragment.bytearray = GetPartOfPayload(1, PayloadLength - hp.PadLength);
-            } else if (FlagPriority)
-            {
-                var temp = Split32BitToBoolAnd31bitInt(ConvertFromIncompleteByteArray(GetPartOfPayload(0, 3)));
-                hp.StreamDependencyIsExclusive = temp.bit32;
-                hp.StreamDependency = temp.int31;
-                hp.Weight = GetPartOfPayload(4, 5)[0];
-                hp.headerBlockFragment.bytearray = GetPartOfPayload(5, PayloadLength - hp.PadLength);
             }
-            else
-            {
-                hp.headerBlockFragment.bytearray = GetPartOfPayload(0, PayloadLength - hp.PadLength);
-            }
+            hp.headerBlockFragment.bytearray = data;
             return hp;
         }
 
@@ -393,6 +441,7 @@ namespace lib.HTTPObjects
             if(Type != PRIORITY_TYPE)
             {
                 //todo
+                throw new Exception("wrong type of frame requested");
             }
             var split = Split32BitToBoolAnd31bitInt(ConvertFromIncompleteByteArray(GetPartOfPayload(0, 4)));
             PriorityPayload pp = new PriorityPayload();
@@ -402,16 +451,52 @@ namespace lib.HTTPObjects
             return pp;
         }
 
+        public static byte[] CombineHeaderPayloads(params HTTP2Frame[] frames)
+        {
+            List<byte> bytes = new List<byte>();
+            byte headerFlags = frames[0].Flag;
+            byte[] headerPayload = frames[0].Payload;
+            int i = 0;
+            bool padded = (headerFlags & PADDED) > 0;
+            if (padded)
+                i++;
+            if ((headerFlags & PRIORITY_FLAG) > 0)
+                i += 5;
+            for(; i < headerPayload.Length-(padded?headerPayload[0]:0); i++)
+            {
+                bytes.Add(headerPayload[i]);
+            }
+
+            for(int j = 1; j < frames.Length; j++)
+            {
+                bytes.AddRange(frames[j].Payload);
+            }
+            return bytes.ToArray();
+        }
+
+        public static byte[] CombineByteArrays(params byte[][] arrays)
+        {
+            int size = 0; 
+            foreach(byte[] b in arrays)
+            {
+                size += b.Length;
+            }
+
+            byte[] array = new byte[size];
+
+            int i = 0;
+            foreach (byte[] bA in arrays)
+                foreach (byte b in bA)
+                    array[i++] = b;
+            return array;
+        }
+
         public static int ConvertFromIncompleteByteArray(byte[] array)
         {
             byte[] target = new byte[4];
-            int j = littleEndian ? 0 : array.Length;
-            for (int i = 0; i < array.Length; i++)
-            {
-                target[j] = array[i];
-                j += littleEndian ? 1 : -1;
-            }
-            return BitConverter.ToInt32(target, 0);
+            for(int i = 0; i < array.Length; i++)
+                target[i + (4 - array.Length)] = array[i];
+            return (target[0] << 24) + (target[1] << 16) + (target[2] << 8) + target[3];
         }
 
         public static byte[] ConvertToByteArray(int number, int bytes = 4)
@@ -423,11 +508,34 @@ namespace lib.HTTPObjects
         {
             if (bytes > 8) throw new Exception("too many bytes requested");
             var byteArr = new byte[bytes];
-            var numArr = BitConverter.GetBytes(number);
-            if (littleEndian) Array.Reverse(numArr);
+            var numArr = ExtractBytes(number);
             for (int j = 0; j < bytes; j++)
                 byteArr[j] = numArr[j + (8-bytes)];
             return byteArr;
+        }
+
+        public static byte[] ExtractBytes(long num)
+        {
+            byte[] b = new byte[8];
+            for (int i = 0; i < 8; i++)
+                b[i] = (byte)(num >> (56-i*8));
+            return b;
+        }
+
+        public static byte[] ExtractBytes(int num)
+        {
+            byte[] b = new byte[4];
+            for (int i = 0; i < 4; i++)
+                b[i] = (byte)(num >> (24 - i * 8));
+            return b;
+        }
+
+        public static byte[] ExtractBytes(short num)
+        {
+            byte[] b = new byte[2];
+            for (int i = 0; i < 2; i++)
+                b[i] = (byte)(num >> (8 - i * 8));
+            return b;
         }
 
         private byte[] GetPartOfByteArray(int start, int end, byte[] b)

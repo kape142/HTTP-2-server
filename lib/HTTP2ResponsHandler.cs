@@ -16,7 +16,7 @@ namespace lib
                 case HTTP2Frame.DATA:
                     break;
                 case HTTP2Frame.HEADERS:
-                    HeaderPayload hp = frame.GetHeaderPayloadDekoded();
+                    HeaderPayload hp = frame.GetHeaderPayloadDecoded();
 
                     break;
                 case HTTP2Frame.PRIORITY_TYPE:
