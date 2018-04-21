@@ -25,7 +25,7 @@ namespace lib.Streams
         public uint Weight{get; set;} = 16;
         public List<Stream> dependencies;
         public uint Dependency { get; set; } = 0;
-        public Queue<Frame> frames;
+        public Queue<HTTP2Frame> frames;
 
 
         public StreamState State { get; set; } = StreamState.Idle;

@@ -5,7 +5,7 @@ using System.Text;
 
 namespace lib
 {
-    class Response
+    public class Response
     {
         public string HTTPv { get; private set; }
         public string Status { get; private set; }
@@ -23,9 +23,16 @@ namespace lib
             {
                 case "HTTP/1.0":
                 case "HTTP/1.1":
-                    if (req.HeaderLines.ContainsKey("Upgrade"))
+                    if (req.IsUpgradeTo2)
                     {
                         return DoUppgrade(req);
+                    }
+                    if (Server.registerdActionsOnUrls.ContainsKey("/" + req.HttpUrl))
+                    {
+                        Action<HTTP1Request, Response> a = Server.registerdActionsOnUrls["/"+ req.HttpUrl];
+                        Response res = new Response(req.Httpv, Server.OK, null, null);
+                        a(req, res);
+                        return res;
                     }
                     switch (req.Type)
                     {
@@ -117,7 +124,10 @@ namespace lib
             */
             #endregion
         }
-
+        public void Send(char[] data)
+        {
+            this.Data = data;
+        }
         private static Response HTTP1Response(HTTP1Request req, bool headrequest=false)
         {
             Console.WriteLine("Responding with http/1.1...");
@@ -199,7 +209,7 @@ namespace lib
                 { "Connection", "Upgrade" },
                 { "Upgrade", "h2c" }
             };
-            char[] d = null;
+            char[] d = new char[0];
             return new Response(Server.HTTP1V, Server.SWITCHING_PROTOCOLS, lst, d);
         }
         private static Response GetResponseForUpgradeToh2()
@@ -209,21 +219,21 @@ namespace lib
                 { "Connection", "Upgrade" },
                 { "Upgrade", "h2" }
             };
-            char[] d = null;
+            char[] d = new char[0];
             return new Response(Server.HTTP1V, Server.SWITCHING_PROTOCOLS, lst, d);
         }
 
         public override string ToString()
         {
-            string ret = HTTPv + " " + Status + "\n";
+            string ret = HTTPv + " " + Status + "\r\n";
             if (HeaderLines != null)
             {
                 foreach (var item in HeaderLines)
                 {
-                    ret += item.Key + " : " + item.Value + "\n";
+                    ret += item.Key + " : " + item.Value + "\r\n";
                 }
             }
-            return ret;
+            return ret + "\r\n"; ;
         }
     }
 }
