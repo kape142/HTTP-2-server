@@ -254,7 +254,7 @@ namespace lib.HTTPObjects
         public HTTP2Frame addSettingsPayload(Tuple<short, int>[] settings, bool ack = false)
         {
             Type = SETTINGS;
-            Flag = ack ? ACK : NO_FLAG;
+            Flag = ack ? FLAG_ACK : NO_FLAG;
 
             var array = new byte[settings.Length * 6];
             int i = 0;
@@ -296,7 +296,7 @@ namespace lib.HTTPObjects
 
         public HTTP2Frame AddHeaderPayload(byte[] data, byte paddingLength = 0x0, bool end_headers = false, bool end_stream = false)
         {
-            byte flag = (byte)((end_stream ? END_STREAM : NO_FLAG) | (end_headers ? END_HEADERS : NO_FLAG) | ((paddingLength != 0x0) ? PADDED : NO_FLAG));
+            byte flag = (byte)((end_stream ? FLAG_END_STREAM : NO_FLAG) | (end_headers ? FLAG_END_HEADERS : NO_FLAG) | ((paddingLength != 0x0) ? FLAG_PADDED : NO_FLAG));
             Type = HEADERS;
             Flag = flag;
             var array = new byte[data.Length + paddingLength + ((paddingLength > 0) ? 1 : 0)];
@@ -359,7 +359,7 @@ namespace lib.HTTPObjects
         public HTTP2Frame AddPushPromisePayload(int promisedStreamId, byte[] data, byte paddingLength = 0x0, bool endHeaders = false)
         {
             bool padded = paddingLength > 0;
-            Flag = (byte)((padded ? PADDED : NO_FLAG) & (endHeaders ? END_HEADERS : NO_FLAG));
+            Flag = (byte)((padded ? FLAG_PADDED : NO_FLAG) & (endHeaders ? FLAG_END_HEADERS : NO_FLAG));
             Type = PUSH_PROMISE;
             Payload = CombineByteArrays(((padded) ? new byte[] { paddingLength } : new byte[] { }),ExtractBytes(promisedStreamId),data);
             return this;
@@ -373,7 +373,7 @@ namespace lib.HTTPObjects
         public HTTP2Frame AddPingPayload(byte[] opaqueData)
         {
             Type = PING;
-            Flag = ACK;
+            Flag = FLAG_ACK;
             Payload = opaqueData;
             return this;
         }
@@ -397,7 +397,7 @@ namespace lib.HTTPObjects
         public HTTP2Frame AddContinuationFrame(byte[] headerBlockFragment, bool endHeaders = false)
         {
             Type = CONTINUATION;
-            Flag = endHeaders ? END_HEADERS : NO_FLAG;
+            Flag = endHeaders ? FLAG_END_HEADERS : NO_FLAG;
             Payload = headerBlockFragment;
             return this;
         }
@@ -411,10 +411,10 @@ namespace lib.HTTPObjects
             }
             byte[] headerPayload = Payload;
             int i = 0;
-            bool padded = (Flag & PADDED) > 0;
+            bool padded = (Flag & FLAG_PADDED) > 0;
             if (padded)
                 i++;
-            bool priority = (Flag & PRIORITY_FLAG) > 0;
+            bool priority = (Flag & FLAG_PRIORITY) > 0;
             if (priority)
                 i += 5;
             int dataLength = headerPayload.Length - i - (padded ? headerPayload[0] : 0);
@@ -457,10 +457,10 @@ namespace lib.HTTPObjects
             byte headerFlags = frames[0].Flag;
             byte[] headerPayload = frames[0].Payload;
             int i = 0;
-            bool padded = (headerFlags & PADDED) > 0;
+            bool padded = (headerFlags & FLAG_PADDED) > 0;
             if (padded)
                 i++;
-            if ((headerFlags & PRIORITY_FLAG) > 0)
+            if ((headerFlags & FLAG_PRIORITY) > 0)
                 i += 5;
             for(; i < headerPayload.Length-(padded?headerPayload[0]:0); i++)
             {
@@ -571,25 +571,6 @@ namespace lib.HTTPObjects
         {
             return bit32 ? (int)(int31 | 0x80000000) : (int)(int31 & 0x7fffffff);
         }
-
-        public static byte[] CombineByteArrays(params byte[][] arrays)
-        {
-            int size = 0;
-            foreach (byte[] b in arrays)
-            {
-                size += b.Length;
-            }
-
-            byte[] array = new byte[size];
-
-            int i = 0;
-            foreach (byte[] bA in arrays)
-                foreach (byte b in bA)
-                    array[i++] = b;
-            return array;
-        }
-
-
     }
 }
 

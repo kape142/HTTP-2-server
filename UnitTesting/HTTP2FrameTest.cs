@@ -20,7 +20,7 @@ namespace UnitTest
             byte[] bytes = frame.getBytes();
             Assert.Equal(12, HTTP2Frame.ConvertFromIncompleteByteArray(new byte[] {bytes[0],bytes[1],bytes[2]}));
             Assert.Equal(HTTP2Frame.SETTINGS, bytes[3]);
-            Assert.Equal(HTTP2Frame.ACK, bytes[4]);
+            Assert.Equal(HTTP2Frame.FLAG_ACK, bytes[4]);
             Assert.Equal(8, bytes[8]);
             Assert.Equal(HTTP2Frame.SETTINGS_INITIAL_WINDOW_SIZE, HTTP2Frame.ConvertFromIncompleteByteArray(new byte[] { bytes[9], bytes[10]}));
             Assert.Equal(0x1000, HTTP2Frame.ConvertFromIncompleteByteArray(new byte[] { bytes[11], bytes[12], bytes[13], bytes[14] }));
@@ -105,7 +105,7 @@ namespace UnitTest
         {
             byte[] data = { 1, 2, 3, 4 };
             HTTP2Frame frame = new HTTP2Frame(1).AddHeaderPayload(data, 2, true, true);
-            HeaderPayload hh = frame.GetHeaderPayloadDekoded();
+            HeaderPayload hh = frame.GetHeaderPayloadDecoded();
         }
 
     }
