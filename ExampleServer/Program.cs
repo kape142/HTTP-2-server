@@ -37,8 +37,12 @@ namespace ExampleServer
             Console.ReadLine();
             */
 
-            Server.testFrame();
-
+            int i = 1823423647;
+            var b = BitConverter.GetBytes(i);
+            Array.Reverse(b);
+            foreach (byte by in b)
+                Console.Write($"{by} ");
+            Console.WriteLine(HTTP2Frame.ConvertFromIncompleteByteArray(b));
         }
     }
 }

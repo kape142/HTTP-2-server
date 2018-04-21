@@ -93,14 +93,14 @@ namespace lib.Streams
             OutgoingStreams.Add(currentstream);
 
             // concatinate the payloads
-            HTTP2Frame[] frames = // hent rammer
+            //HTTP2Frame[] frames = // hent rammer
 
                  // først switch på type
                  // så if på flag
 
 
             // viss end er satt så behandle requesten
-            switch (frame.Type)
+            /*switch (frame.Type)
             {
                 case HTTP2Frame.DATA:
                     break;
@@ -126,7 +126,7 @@ namespace lib.Streams
                     break;
                 default:
                     break;
-            }
+            }*/
 
         }
     }

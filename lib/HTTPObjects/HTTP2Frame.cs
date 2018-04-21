@@ -7,7 +7,6 @@ namespace lib.HTTPObjects
 {
     public class HTTP2Frame
     {
-        private static readonly bool littleEndian = BitConverter.IsLittleEndian;
         public const int headerSize = 9;
 
         #region constants
@@ -162,8 +161,7 @@ namespace lib.HTTPObjects
         public HTTP2Frame(int streamIdentifier)
         {
             var array = new byte[headerSize];
-            var streamIdentifierArr = BitConverter.GetBytes(streamIdentifier);
-            if (littleEndian) Array.Reverse(streamIdentifierArr);
+            var streamIdentifierArr = ExtractBytes(streamIdentifier);
             for (int i = 0; i < 4; i++)
                 array[5 + i] = streamIdentifierArr[i];
             this.byteArray = array;
@@ -237,13 +235,11 @@ namespace lib.HTTPObjects
             int i = 0;
             foreach (var tuple in settings)
             {
-                var item1bytes = BitConverter.GetBytes(tuple.Item1);
-                if (littleEndian) Array.Reverse(item1bytes);
+                var item1bytes = ConvertToByteArray(tuple.Item1, 2);
                 foreach (byte b in item1bytes)
                     array[i++] = b;
 
-                var item2bytes = BitConverter.GetBytes(tuple.Item2);
-                if (littleEndian) Array.Reverse(item2bytes);
+                var item2bytes = ConvertToByteArray(tuple.Item2, 4);
                 foreach (byte b in item2bytes)
                     array[i++] = b;
             }
@@ -322,22 +318,56 @@ namespace lib.HTTPObjects
                 array[i] = (i < 4) ? first32Arr[i] : weight;
             }
             Payload = array;
+            Flag = NO_FLAG;
+            Type = PRIORITY_TYPE;
             return this;
         }
 
-        internal HeaderPayload GetHeaderPayloadDekoded()
+        public HTTP2Frame AddRSTStreamPayload(int errorcode)
+        {
+            Flag = NO_FLAG;
+            Type = RST_STREAM;
+            Payload = ExtractBytes(errorcode);
+            return this;
+        }
+
+        public HTTP2Frame AddPushPromisePayload(int promisedStreamId, byte[] data, byte paddingLength = 0x0, bool endHeaders = false)
+        {
+            //Flag = ()
+            return this;
+        }
+
+        public HeaderPayload GetHeaderPayloadDecoded()
         {
             if(Type != HEADERS)
             {
                 // todo
+                throw new Exception("wrong type of frame requested");
+            }
+            byte[] headerPayload = Payload;
+            int i = 0;
+            bool padded = (Flag & PADDED) > 0;
+            if (padded)
+                i++;
+            bool priority = (Flag & PRIORITY_FLAG) > 0;
+            if (priority)
+                i += 5;
+            int dataLength = headerPayload.Length - i - (padded ? headerPayload[0] : 0);
+            byte[] data = new byte[dataLength];
+            for (int j = 0; j < dataLength; j++)
+            {
+                data[j] = headerPayload[i++];
             }
             HeaderPayload hp = new HeaderPayload();
-            hp.PadLength = GetPartOfPayload(0, 1)[0];
-            var temp = Split32BitToBoolAnd31bitInt(ConvertFromIncompleteByteArray(GetPartOfPayload(1, 4)));
-            hp.StreamDependencyIsExclusive = temp.bit32;
-            hp.StreamDependency = temp.int31;
-            hp.Weight = GetPartOfPayload(5, 6)[0];
-            hp.headerBlockFragment.bytearray = GetPartOfPayload(6, PayloadLength - hp.PadLength);
+            if (padded) hp.PadLength = GetPartOfPayload(0, 1)[0];
+            if (priority)
+            {
+                var temp = Split32BitToBoolAnd31bitInt(ConvertFromIncompleteByteArray(GetPartOfPayload(1, 4)));
+                hp.StreamDependencyIsExclusive = temp.bit32;
+                hp.StreamDependency = temp.int31;
+                hp.Weight = GetPartOfPayload(5, 6)[0];
+            }
+            hp.headerBlockFragment.bytearray = data;
             return hp;
         }
 
@@ -346,6 +376,7 @@ namespace lib.HTTPObjects
             if(Type != PRIORITY_TYPE)
             {
                 //todo
+                throw new Exception("wrong type of frame requested");
             }
             var split = Split32BitToBoolAnd31bitInt(ConvertFromIncompleteByteArray(GetPartOfPayload(0, 4)));
             PriorityPayload pp = new PriorityPayload();
@@ -355,16 +386,52 @@ namespace lib.HTTPObjects
             return pp;
         }
 
+        public static byte[] CombineHeaderPayloads(params HTTP2Frame[] frames)
+        {
+            List<byte> bytes = new List<byte>();
+            byte headerFlags = frames[0].Flag;
+            byte[] headerPayload = frames[0].Payload;
+            int i = 0;
+            bool padded = (headerFlags & PADDED) > 0;
+            if (padded)
+                i++;
+            if ((headerFlags & PRIORITY_FLAG) > 0)
+                i += 5;
+            for(; i < headerPayload.Length-(padded?headerPayload[0]:0); i++)
+            {
+                bytes.Add(headerPayload[i]);
+            }
+
+            for(int j = 1; j < frames.Length; j++)
+            {
+                bytes.AddRange(frames[j].Payload);
+            }
+            return bytes.ToArray();
+        }
+
+        public static byte[] CombineByteArrays(params byte[][] arrays)
+        {
+            int size = 0; 
+            foreach(byte[] b in arrays)
+            {
+                size += b.Length;
+            }
+
+            byte[] array = new byte[size];
+
+            int i = 0;
+            foreach (byte[] bA in arrays)
+                foreach (byte b in bA)
+                    array[i++] = b;
+            return array;
+        }
+
         public static int ConvertFromIncompleteByteArray(byte[] array)
         {
             byte[] target = new byte[4];
-            for (int i = 0; i < array.Length; i++)
-            {
-                int j = littleEndian ? 0 : array.Length;
-                target[j] = array[i];
-                j += littleEndian ? 1 : -1;
-            }
-            return BitConverter.ToInt32(target, 0);
+            for(int i = 0; i < array.Length; i++)
+                target[i + (4 - array.Length)] = array[i];
+            return (target[0] << 24) + (target[1] << 16) + (target[2] << 8) + target[3];
         }
 
         public static byte[] ConvertToByteArray(int number, int bytes = 4)
@@ -376,11 +443,34 @@ namespace lib.HTTPObjects
         {
             if (bytes > 8) throw new Exception("too many bytes requested");
             var byteArr = new byte[bytes];
-            var numArr = BitConverter.GetBytes(number);
-            if (littleEndian) Array.Reverse(numArr);
+            var numArr = ExtractBytes(number);
             for (int j = 0; j < bytes; j++)
                 byteArr[j] = numArr[j + (8-bytes)];
             return byteArr;
+        }
+
+        public static byte[] ExtractBytes(long num)
+        {
+            byte[] b = new byte[8];
+            for (int i = 0; i < 8; i++)
+                b[i] = (byte)(num >> (56-i*8));
+            return b;
+        }
+
+        public static byte[] ExtractBytes(int num)
+        {
+            byte[] b = new byte[4];
+            for (int i = 0; i < 4; i++)
+                b[i] = (byte)(num >> (24 - i * 8));
+            return b;
+        }
+
+        public static byte[] ExtractBytes(short num)
+        {
+            byte[] b = new byte[2];
+            for (int i = 0; i < 2; i++)
+                b[i] = (byte)(num >> (8 - i * 8));
+            return b;
         }
 
         private byte[] GetPartOfByteArray(int start, int end, byte[] b)

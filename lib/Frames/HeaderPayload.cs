@@ -4,7 +4,7 @@ using System.Text;
 
 namespace lib.Frames
 {
-    class HeaderPayload
+    public class HeaderPayload
     {
         public byte PadLength;
         public bool StreamDependencyIsExclusive;

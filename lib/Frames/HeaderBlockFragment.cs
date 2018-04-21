@@ -4,7 +4,7 @@ using System.Text;
 
 namespace lib.Frames
 {
-    class HeaderBlockFragment
+    public class HeaderBlockFragment
     {
         public byte[] bytearray { get; set; }
     }
