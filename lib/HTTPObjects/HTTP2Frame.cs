@@ -14,10 +14,7 @@ namespace lib.HTTPObjects
         //Frame Types
         public const byte DATA = 0x0;
         public const byte HEADERS = 0x1;
-        public const byte PRIORITY_TYPE = 0x2;
-
-
-
+        public const byte PRIORITY_TYPE = 0x2
         public const byte RST_STREAM = 0x3;
         public const byte SETTINGS = 0x4;
         public const byte PUSH_PROMISE = 0x5;
@@ -414,6 +411,19 @@ namespace lib.HTTPObjects
             pp.StreamDependency = split.int31;
             pp.Weight = GetPartOfPayload(4, 5)[0];
             return pp;
+        }
+
+        public WindowUpdatePayload GetWindowUpdatePayloadDecoded()
+        {
+            if (Type != WINDOW_UPDATE)
+            {
+                //todo
+                throw new Exception("wrong type of frame requested");
+            }
+            var split = Split32BitToBoolAnd31bitInt(ConvertFromIncompleteByteArray(GetPartOfPayload(0, 4)));
+            WindowUpdatePayload wup = new WindowUpdatePayload();
+            wup.WindowSizeIncrement = split.int31;
+            return wup;
         }
 
         //Static methods
