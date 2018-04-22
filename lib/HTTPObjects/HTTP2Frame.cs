@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using static lib.Bytes;
 
 namespace lib.HTTPObjects
 {
@@ -79,7 +80,6 @@ namespace lib.HTTPObjects
                 byteArray[3] = value;
             }
         }
-
         public byte Flag
         {
             get
@@ -91,14 +91,12 @@ namespace lib.HTTPObjects
                 byteArray[4] = value;
             }
         }
-
         public bool EndStream {
             get
             {
                 return ((Flag & END_STREAM) > 0);
             }
         }
-
         public bool EndHeaders
         {
             get
@@ -106,7 +104,6 @@ namespace lib.HTTPObjects
                 return ((Flag & END_HEADERS) > 0);
             }
         }
-
         public int PayloadLength
         {
             get
@@ -114,7 +111,6 @@ namespace lib.HTTPObjects
                 return ConvertFromIncompleteByteArray(GetPartOfByteArray(0, 3));
             }
         }
-
         public int StreamIdentifier
         {
             get
@@ -122,7 +118,6 @@ namespace lib.HTTPObjects
                 return ConvertFromIncompleteByteArray(GetPartOfByteArray(5, 9));
             }
         }
-
         public byte[] Header
         {
             get
@@ -130,7 +125,6 @@ namespace lib.HTTPObjects
                 return GetPartOfByteArray(0, 9);
             }
         }
-
         public byte[] Payload
         {
             get
@@ -152,12 +146,19 @@ namespace lib.HTTPObjects
                 byteArray = frame;
             }
         }
+        
+        public byte[] GetBytes()
+        {
+            var b = new byte[byteArray.Length];
+            Array.Copy(byteArray, b, byteArray.Length);
+            return b;
+        }
 
+        //Constructors
         public HTTP2Frame(byte[] byteArray)
         {
             this.byteArray = byteArray;
         }
-
         public HTTP2Frame(int streamIdentifier)
         {
             var array = new byte[headerSize];
@@ -167,65 +168,8 @@ namespace lib.HTTPObjects
             this.byteArray = array;
         }
 
-        public byte[] getBytes()
-        {
-            var b = new byte[byteArray.Length];
-            Array.Copy(byteArray, b, byteArray.Length);
-            return b;
-        }
-
-
-        public override string ToString()
-        {
-            StringBuilder s = new StringBuilder();
-            StringBuilder payload = new StringBuilder();
-            s.Append("Type: ");
-            switch (byteArray[3])
-            {
-                case DATA:
-                    s.Append("Data");
-                    break;
-                case HEADERS:
-                    s.Append("Headers");
-                    break;
-                case PRIORITY_TYPE:
-                    s.Append("Priority");
-                    break;
-                case RST_STREAM:
-                    s.Append("RST Stream");
-                    break;
-                case SETTINGS:
-                    s.Append("Settings");
-                    break;
-                case PUSH_PROMISE:
-                    s.Append("Push Promise");
-                    break;
-                case PING:
-                    s.Append("Ping");
-                    break;
-                case GOAWAY:
-                    s.Append("GoAway");
-                    break;
-                case WINDOW_UPDATE:
-                    s.Append("Window Update");
-                    break;
-                case CONTINUATION:
-                    s.Append("Continuation");
-                    break;
-                default:
-                    s.Append("Undefined");
-                    break;
-            }
-            s.Append(", ");
-            s.Append($"Flag: {this.Flag}, ");
-            s.Append($"Length: {this.PayloadLength}, ");
-            s.Append($"Stream identifier: {this.StreamIdentifier}");
-
-            return s.ToString();
-
-        }
-
-        public HTTP2Frame addSettingsPayload(Tuple<short, int>[] settings, bool ack = false)
+        //Add Payload
+        public HTTP2Frame AddSettingsPayload(Tuple<short, int>[] settings, bool ack = false)
         {
             Type = SETTINGS;
             Flag = ack ? ACK : NO_FLAG;
@@ -245,8 +189,7 @@ namespace lib.HTTPObjects
             Payload = array;
             return this;
         }
-
-
+        
         public HTTP2Frame AddDataPayload(byte[] data, byte paddingLength = 0x0, bool endStream = false)
         {
             Type = DATA;
@@ -303,8 +246,7 @@ namespace lib.HTTPObjects
             Payload = array;
             return this;
         }
-
-
+        
         public HTTP2Frame AddPriorityPayload(bool streamDependencyIsExclusive, int streamDependency, byte weight = 0)
         {
             int first32 = PutBoolAndIntTo32bitInt(streamDependencyIsExclusive, streamDependency);
@@ -374,6 +316,57 @@ namespace lib.HTTPObjects
             return this;
         }
 
+        //Retrieve information
+        public override string ToString()
+        {
+            StringBuilder s = new StringBuilder();
+            StringBuilder payload = new StringBuilder();
+            s.Append("Type: ");
+            switch (byteArray[3])
+            {
+                case DATA:
+                    s.Append("Data");
+                    break;
+                case HEADERS:
+                    s.Append("Headers");
+                    break;
+                case PRIORITY_TYPE:
+                    s.Append("Priority");
+                    break;
+                case RST_STREAM:
+                    s.Append("RST Stream");
+                    break;
+                case SETTINGS:
+                    s.Append("Settings");
+                    break;
+                case PUSH_PROMISE:
+                    s.Append("Push Promise");
+                    break;
+                case PING:
+                    s.Append("Ping");
+                    break;
+                case GOAWAY:
+                    s.Append("GoAway");
+                    break;
+                case WINDOW_UPDATE:
+                    s.Append("Window Update");
+                    break;
+                case CONTINUATION:
+                    s.Append("Continuation");
+                    break;
+                default:
+                    s.Append("Undefined");
+                    break;
+            }
+            s.Append(", ");
+            s.Append($"Flag: {this.Flag}, ");
+            s.Append($"Length: {this.PayloadLength}, ");
+            s.Append($"Stream identifier: {this.StreamIdentifier}");
+
+            return s.ToString();
+
+        }
+
         public HeaderPayload GetHeaderPayloadDecoded()
         {
             if(Type != HEADERS)
@@ -423,6 +416,7 @@ namespace lib.HTTPObjects
             return pp;
         }
 
+        //Static methods
         public static byte[] CombineHeaderPayloads(params HTTP2Frame[] frames)
         {
             List<byte> bytes = new List<byte>();
@@ -446,102 +440,17 @@ namespace lib.HTTPObjects
             return bytes.ToArray();
         }
 
-        public static byte[] CombineByteArrays(params byte[][] arrays)
-        {
-            int size = 0; 
-            foreach(byte[] b in arrays)
-            {
-                size += b.Length;
-            }
-
-            byte[] array = new byte[size];
-
-            int i = 0;
-            foreach (byte[] bA in arrays)
-                foreach (byte b in bA)
-                    array[i++] = b;
-            return array;
-        }
-
-        public static int ConvertFromIncompleteByteArray(byte[] array)
-        {
-            byte[] target = new byte[4];
-            for(int i = 0; i < array.Length; i++)
-                target[i + (4 - array.Length)] = array[i];
-            return (target[0] << 24) + (target[1] << 16) + (target[2] << 8) + target[3];
-        }
-
-        public static byte[] ConvertToByteArray(int number, int bytes = 4)
-        {
-            return ConvertToByteArray((long)number, bytes);
-        }
-
-        public static byte[] ConvertToByteArray(long number, int bytes = 4)
-        {
-            if (bytes > 8) throw new Exception("too many bytes requested");
-            var byteArr = new byte[bytes];
-            var numArr = ExtractBytes(number);
-            for (int j = 0; j < bytes; j++)
-                byteArr[j] = numArr[j + (8-bytes)];
-            return byteArr;
-        }
-
-        public static byte[] ExtractBytes(long num)
-        {
-            byte[] b = new byte[8];
-            for (int i = 0; i < 8; i++)
-                b[i] = (byte)(num >> (56-i*8));
-            return b;
-        }
-
-        public static byte[] ExtractBytes(int num)
-        {
-            byte[] b = new byte[4];
-            for (int i = 0; i < 4; i++)
-                b[i] = (byte)(num >> (24 - i * 8));
-            return b;
-        }
-
-        public static byte[] ExtractBytes(short num)
-        {
-            byte[] b = new byte[2];
-            for (int i = 0; i < 2; i++)
-                b[i] = (byte)(num >> (8 - i * 8));
-            return b;
-        }
-
-        public static byte[] GetPartOfByteArray(int start, int end, byte[] b)
-        {
-            byte[] part = new byte[end - start];
-            for(int i = 0; i< end - start; i++)
-            {
-                part[i] = b[start + i];
-            }
-            return part;
-        }
+        
 
         private byte[] GetPartOfByteArray(int start, int end)
         {
-            return GetPartOfByteArray(start, end, byteArray);
+            return Bytes.GetPartOfByteArray(start, end, byteArray);
         }
 
         private byte[] GetPartOfPayload(int start, int end)
         {
             if ((end + headerSize) > byteArray.Length-1) return null;  // todo sjekk denne
-            return GetPartOfByteArray(start + headerSize, end + headerSize, byteArray);
-        }
-
-        public static (bool bit32, int int31) Split32BitToBoolAnd31bitInt(int i)
-        {
-            int _bit32 = (int)(i & 0b10000000000000000000000000000000);
-            bool _bit = (_bit32 == -2147483648) ? true : false;
-            int _uint32 = (int)(i & 0b01111111111111111111111111111111);
-            return (_bit, _uint32);
-        }
-
-        public static int PutBoolAndIntTo32bitInt(bool bit32, int int31)
-        {
-            return bit32 ? (int)(int31 | 0x80000000) : (int)(int31 & 0x7fffffff);
+            return Bytes.GetPartOfByteArray(start + headerSize, end + headerSize, byteArray);
         }
     }
 }

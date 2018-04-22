@@ -86,13 +86,13 @@ namespace lib
 
         public static void testFrame(){
             var fc = new HTTP2Frame(128).AddHeaderPayload(new byte[6], 16,0x8,true, 0x2, true, false);
-            byte[] bytes = fc.getBytes();
+            byte[] bytes = fc.GetBytes();
             foreach(byte b in bytes)
                 Console.WriteLine(Convert.ToString(b, 2).PadLeft(8, '0'));
 
             /*Console.WriteLine(fc.ToString());
-            fc.addSettingsPayload(new Tuple<short, int>[] {new Tuple<short,int>(HTTP2Frame.SETTINGS_MAX_FRAME_SIZE,128) });
-            var by = fc.getBytes();
+            fc.AddSettingsPayload(new Tuple<short, int>[] {new Tuple<short,int>(HTTP2Frame.SETTINGS_MAX_FRAME_SIZE,128) });
+            var by = fc.GetBytes();
             foreach (byte b in by)
                 Console.Write($"{b} ");
             Console.WriteLine();

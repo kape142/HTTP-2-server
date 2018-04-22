@@ -9,7 +9,7 @@ namespace lib.HTTPObjects
 {
     public class HTTPResponse
     {
-        private void GetDataFramesFromFile(Streams.Stream stream, string url)
+        private void GetDataFramesFromFile(Stream stream, string url)
         {
             String file = null;
             if (url == "")
@@ -25,15 +25,14 @@ namespace lib.HTTPObjects
             FileStream fs = fi.OpenRead();
             BinaryReader reader = new BinaryReader(fs);
             long length = fs.Length;
-            byte[] d = new byte[Frame.SETTINGS_MAX_FRAME_SIZE];
-            for (long i = 0; i < length; i += Frame.SETTINGS_MAX_FRAME_SIZE)
+            byte[] d = new byte[HTTP2Frame.SETTINGS_MAX_FRAME_SIZE];
+            for (long i = 0; i < length; i += HTTP2Frame.SETTINGS_MAX_FRAME_SIZE)
             {
-                reader.Read(d, Frame.SETTINGS_MAX_FRAME_SIZE, (int)i);
-                stream.addFrame(new Frame((int)stream.Id).AddDataPayload(d));
+                reader.Read(d, HTTP2Frame.SETTINGS_MAX_FRAME_SIZE, (int)i);
+                //stream.addFrame(new HTTP2Frame((int)stream.Id).AddDataPayload(d));
             }
-            int rest = (int)length % Frame.SETTINGS_MAX_FRAME_SIZE;
+            int rest = (int)length % HTTP2Frame.SETTINGS_MAX_FRAME_SIZE;
             reader.Read(d, (int)length - rest, rest);
         }
     }
-}
 }
