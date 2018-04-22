@@ -86,14 +86,14 @@ namespace lib
                             });
 
                             Task.Run(() => {
-                                //HTTP2Frame connectionpreface = new HTTP2Frame(0).addSettingsPayload(HTTP2Frame.ACK, new Tuple<byte, int>[0]);
+                                //HTTP2Frame connectionpreface = new HTTP2Frame(0).AddSettingsPayload(HTTP2Frame.ACK, new Tuple<byte, int>[0]);
                                 //WriteFrame(connectionpreface);
                                 Tuple<short, int>[] settings = new Tuple<short, int>[]
                                 {
                                     Tuple.Create(HTTP2Frame.SETTINGS_MAX_CONCURRENT_STREAMS, 100),
                                     Tuple.Create(HTTP2Frame.SETTINGS_INITIAL_WINDOW_SIZE, Server.MAX_HTTP2_FRAME_SIZE)
                                 };
-                                HTTP2Frame firstSettingsframe = new HTTP2Frame(0).addSettingsPayload(settings);
+                                HTTP2Frame firstSettingsframe = new HTTP2Frame(0).AddSettingsPayload(settings);
                                 Console.WriteLine(firstSettingsframe);
                                 WriteFrame(firstSettingsframe);
                             });
@@ -205,7 +205,7 @@ namespace lib
         private async Task WriteFrame(HTTP2Frame frame)
         {
             binaryWriter.Flush();
-            binaryWriter.Write(frame.getBytes(), 0, frame.getBytes().Length);
+            binaryWriter.Write(frame.GetBytes(), 0, frame.GetBytes().Length);
         }
         
         private async Task WriteResponse(Response r)
