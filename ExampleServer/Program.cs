@@ -42,7 +42,7 @@ namespace ExampleServer
             Array.Reverse(b);
             foreach (byte by in b)
                 Console.Write($"{by} ");
-            Console.WriteLine(HTTP2Frame.ConvertFromIncompleteByteArray(b));
+            Console.WriteLine(Bytes.ConvertFromIncompleteByteArray(b));
         }
     }
 }

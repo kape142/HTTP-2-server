@@ -34,9 +34,9 @@ namespace lib.Streams
             Id = id;
         }
 
-        public void addFrame(Frame frame)
+        public void addFrame(HTTP2Frame frame)
         {
-            frames.Enqueue(frame);
+            //frames.Enqueue(frame);
         }
 
 
