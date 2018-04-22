@@ -1,4 +1,5 @@
-﻿using lib.HTTPObjects;
+﻿using lib.Frames;
+using lib.HTTPObjects;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,15 +7,17 @@ using System.Text;
 
 namespace lib
 {
-    class HTTP2ResponsHandler
+    public class HTTP2ResponsHandler
     {
-        static void Handle(HTTP2Frame frame)
+        public static void Handle(HTTP2Frame frame)
         {
             switch (frame.Type)
             {
                 case HTTP2Frame.DATA:
                     break;
                 case HTTP2Frame.HEADERS:
+                    HeaderPayload hp = frame.GetHeaderPayloadDecoded();
+
                     break;
                 case HTTP2Frame.PRIORITY_TYPE:
                     break;
