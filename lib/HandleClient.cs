@@ -126,8 +126,6 @@ namespace lib
             }
         }
 
-        
-
         private async Task RespondToHTTP2Get(string url)
         {
 
