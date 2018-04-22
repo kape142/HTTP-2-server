@@ -158,6 +158,8 @@ namespace lib
                         lst.Add("Content-Length", d.Length.ToString());
                         lst.Add("Keep-Alive", "timeout=5, max=100");
                         lst.Add("Connection", "Keep-Alive");
+                        //char[] outarray = new char[d.Length*2];
+                        //Convert.ToBase64CharArray(d, 0, d.Length, outarray, 0);
                         return new Response(Server.HTTP1V, Server.OK, lst, (headrequest)? new char[0] : d);
                     }
                 }

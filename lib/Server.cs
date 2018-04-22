@@ -60,6 +60,8 @@ namespace lib
                 while (true)
                 {
                     TcpClient tcpClient = tcpListener.AcceptTcpClient();
+                    Console.WriteLine("New client connected---------------------------------");
+                    Console.WriteLine("On port " + ((IPEndPoint)tcpClient.Client.RemoteEndPoint).Port);
                     HandleClient handleClient = new HandleClient();
                     handleClient.StartThreadForClient(tcpClient, Port, Certificate);
                 }

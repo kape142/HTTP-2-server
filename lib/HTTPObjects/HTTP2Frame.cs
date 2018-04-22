@@ -451,6 +451,17 @@ namespace lib.HTTPObjects
             return pp;
         }
 
+        public GoAwayPayload GetGoAwayPayloadDecoded()
+        {
+            GoAwayPayload gp = new GoAwayPayload();
+            var temp = Split32BitToBoolAnd31bitInt(ConvertFromIncompleteByteArray(GetPartOfPayload(0, 4)));
+            gp.r = temp.bit32;
+            gp.LastStreamId = temp.int31;
+            gp.ErrorCode = ConvertFromIncompleteByteArray(GetPartOfPayload(4, 8));
+            gp.AdditionalDebugData = Encoding.ASCII.GetString(GetPartOfPayload(8, PayloadLength));
+            return gp;
+        }
+
         public static byte[] CombineHeaderPayloads(params HTTP2Frame[] frames)
         {
             List<byte> bytes = new List<byte>();
@@ -555,7 +566,7 @@ namespace lib.HTTPObjects
 
         private byte[] GetPartOfPayload(int start, int end)
         {
-            if ((end + headerSize) > byteArray.Length-1) return null;  // todo sjekk denne
+            if ((end + headerSize) > byteArray.Length) return null;  // todo sjekk denne
             return GetPartOfByteArray(start + headerSize, end + headerSize, byteArray);
         }
 

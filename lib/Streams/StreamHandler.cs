@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using lib.Frames;
 using lib.HTTPObjects;
 
 namespace lib.Streams
@@ -38,8 +39,6 @@ namespace lib.Streams
                     lock (this)
                     {
                      frametosend = framesToSend.Dequeue();
-                        Console.WriteLine("Sender ramme: ");
-                        Console.WriteLine(frametosend.ToString());
                     }
                     await Task.Run(() => Client.WriteFrame(frametosend));
                 }
@@ -128,12 +127,55 @@ namespace lib.Streams
 
         internal void AddIncomingFrame(HTTP2Frame frame)
         {
-            IncomingStreams.Find(x => x.Id == frame.StreamIdentifier).Frames.Enqueue(frame);
-            if (frame.FlagEndHeaders)
+            switch (frame.Type)
             {
-                // sette sammen fragmentene og svare
-                IncomingStreams.Find(x => x.Id == frame.StreamIdentifier).EndOfHeaders();
+                case HTTP2Frame.DATA:
+                    Console.WriteLine("DATA frame recived");
+                    break;
+                case HTTP2Frame.HEADERS:
+                    Console.WriteLine("HEADERS frame recived");
+                    break;
+                case HTTP2Frame.PRIORITY_TYPE:
+                    Console.WriteLine("PRIORITY_TYPE frame recived");
+                    break;
+                case HTTP2Frame.RST_STREAM:
+                    Console.WriteLine("RST_STREAM frame recived");
+                    break;
+                case HTTP2Frame.SETTINGS:
+                    Console.WriteLine("SETTINGS frame recived");
+                    if(frame.StreamIdentifier != 0)
+                    {
+                        // send protocol error
+                        break;
+                    }
+                    SendFrame(new HTTP2Frame(0).addSettingsPayload(new Tuple<short, int>[0], true));
+                    break;
+                case HTTP2Frame.PUSH_PROMISE:
+                    Console.WriteLine("PUSH_PROMISE frame recived");
+                    break;
+                case HTTP2Frame.PING:
+                    Console.WriteLine("PING frame recived");
+                    break;
+                case HTTP2Frame.GOAWAY:
+                    Console.WriteLine("GOAWAY frame recived");
+                    GoAwayPayload gp = frame.GetGoAwayPayloadDecoded();
+                    Console.WriteLine(gp.ToString());
+                    break;
+                case HTTP2Frame.WINDOW_UPDATE:
+                    Console.WriteLine("WINDOW_UPDATE frame recived");
+                    break;
+                case HTTP2Frame.CONTINUATION:
+                    Console.WriteLine("CONTINUATION frame recived");
+                    break;
+                default:
+                    break;
             }
+            // IncomingStreams.Find(x => x.Id == frame.StreamIdentifier).Frames.Enqueue(frame);
+            // if (frame.FlagEndHeaders)
+            // {
+            //     // sette sammen fragmentene og svare
+            //     IncomingStreams.Find(x => x.Id == frame.StreamIdentifier).EndOfHeaders();
+            // }
         }
 
         // en annen metode har funnet ut at
@@ -193,7 +235,7 @@ namespace lib.Streams
             {
                 file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\" + url;
             }
-            HTTPRequestHandler.SendFile(this, 0, file);
+            HTTPRequestHandler.SendFile(this, 1, file);
         }
     }
 
