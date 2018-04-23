@@ -138,10 +138,10 @@ namespace lib.Streams
             switch (frame.Type)
             {
                 case HTTP2Frame.DATA:
-                    Console.WriteLine("DATA frame recived");
+                    Console.WriteLine("DATA frame recived\n" + frame.ToString());
                     break;
                 case HTTP2Frame.HEADERS:
-                    Console.WriteLine("HEADERS frame recived");
+                    Console.WriteLine("HEADERS frame recived\n" + frame.ToString());
                     GetIncommingStreams(frame.StreamIdentifier).Frames.Add(frame);
                     if (frame.FlagEndHeaders)
                     {
@@ -151,13 +151,13 @@ namespace lib.Streams
                     Console.WriteLine(frame.ToString());
                     break;
                 case HTTP2Frame.PRIORITY_TYPE:
-                    Console.WriteLine("PRIORITY_TYPE frame recived");
+                    Console.WriteLine("PRIORITY_TYPE frame recived\n" + frame.ToString());
                     break;
                 case HTTP2Frame.RST_STREAM:
-                    Console.WriteLine("RST_STREAM frame recived");
+                    Console.WriteLine("RST_STREAM frame recived\n" + frame.ToString());
                     break;
                 case HTTP2Frame.SETTINGS:
-                    Console.WriteLine("SETTINGS frame recived");
+                    Console.WriteLine("SETTINGS frame recived\n" + frame.ToString());
                     if(frame.StreamIdentifier != 0)
                     {
                         // send protocol error
@@ -167,21 +167,21 @@ namespace lib.Streams
                     SendFrame(new HTTP2Frame(0).addSettingsPayload(new Tuple<short, int>[0], true));
                     break;
                 case HTTP2Frame.PUSH_PROMISE:
-                    Console.WriteLine("PUSH_PROMISE frame recived");
+                    Console.WriteLine("PUSH_PROMISE frame recived\n" + frame.ToString());
                     break;
                 case HTTP2Frame.PING:
-                    Console.WriteLine("PING frame recived");
+                    Console.WriteLine("PING frame recived\n" + frame.ToString());
                     break;
                 case HTTP2Frame.GOAWAY:
-                    Console.WriteLine("GOAWAY frame recived");
+                    Console.WriteLine("GOAWAY frame recived\n" + frame.ToString());
                     GoAwayPayload gp = frame.GetGoAwayPayloadDecoded();
                     Console.WriteLine(gp.ToString());
                     break;
                 case HTTP2Frame.WINDOW_UPDATE:
-                    Console.WriteLine("WINDOW_UPDATE frame recived");
+                    Console.WriteLine("WINDOW_UPDATE frame recived\n" + frame.ToString());
                     break;
                 case HTTP2Frame.CONTINUATION:
-                    Console.WriteLine("CONTINUATION frame recived");
+                    Console.WriteLine("CONTINUATION frame recived\n" + frame.ToString());
                     GetIncommingStreams(frame.StreamIdentifier).Frames.Add(frame);
                     if (frame.FlagEndHeaders)
                     {
@@ -215,7 +215,7 @@ namespace lib.Streams
             var headerBlockFragment = new ArraySegment<byte>(payloads);
             byte[] decompressedHeaders = new byte[HTTP2Frame.SETTINGS_MAX_FRAME_SIZE];
             List<HeaderField> lstheaders = new List<HeaderField>();
-            var dencodeResult = owner.hpackDecoder.DecodeHeaderBlockFragment(headerBlockFragment, 100, lstheaders); // todo max header size
+            var dencodeResult = owner.hpackDecoder.DecodeHeaderBlockFragment(headerBlockFragment, (uint)HTTP2Frame.SETTINGS_MAX_FRAME_SIZE, lstheaders); // todo max header size
             foreach (var item in lstheaders)
             {
                 Console.WriteLine(item.Name + " " + item.Value);
@@ -224,7 +224,7 @@ namespace lib.Streams
             string path = lstheaders.Find(x => x.Name == ":path").Value;
 
             string file;
-            if (path == "/")
+            if (path is null || path == "" || path == "/")
             {
                 file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\index.html";
             }

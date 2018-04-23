@@ -276,15 +276,14 @@ namespace lib.HTTPObjects
         public HTTP2Frame AddDataPayload(byte[] data, byte paddingLength = 0x0, bool end_stream = false)
         {
             Type = DATA;
-            Flag = (byte)(Flag | ((end_stream) ? FLAG_END_STREAM : 0x0));
+            bool padded = paddingLength > 0;
+            Flag = (byte)((padded ? FLAG_PADDED : NO_FLAG) | (end_stream ? FLAG_END_STREAM : NO_FLAG));
             if (paddingLength == 0x0)
             {
                 Payload = data;
-                Flag = NO_FLAG;
             }
             else
             {
-                Flag = FLAG_PADDED;
                 var array = new byte[1 + data.Length + paddingLength];
                 array[0] = paddingLength;
                 for (int i = 0; i < data.Length; i++)

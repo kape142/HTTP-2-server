@@ -65,7 +65,6 @@ namespace lib
                 while (true)
                 {
                     TcpClient tcpClient = tcpListener.AcceptTcpClient();
-                    
                     HandleClient handleClient = new HandleClient();
                     handleClient.StartThreadForClient(tcpClient, Port, Certificate);
                     clients.Add(handleClient);
