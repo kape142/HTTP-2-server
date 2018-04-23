@@ -4,24 +4,26 @@ using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Collections.Generic;
 using lib.HTTPObjects;
+using System.Threading;
 
 namespace lib
 {
     public class Server
     {
-        public const int HTTPS_PORT = 443;
-        public const string HTTP1V = "HTTP/1.1";
-        public const string SWITCHING_PROTOCOLS = "101 Switching Protocols";
-        public const string OK = "200 OK";
-        public const string NO_CONTENT = "204 No Content";
-        public const string ERROR = "400 Bad Request";
-        public const string SERVER = "prosjekthttp2";
-        public const string DIR = "WebApp";
-        public const uint MAX_HTTP2_FRAME_SIZE = 16384;
+        internal const int HTTPS_PORT = 443;
+        internal const string HTTP1V = "HTTP/1.1";
+        internal const string SWITCHING_PROTOCOLS = "101 Switching Protocols";
+        internal const string OK = "200 OK";
+        internal const string NO_CONTENT = "204 No Content";
+        internal const string ERROR = "400 Bad Request";
+        internal const string SERVER = "prosjekthttp2";
+        internal const string DIR = "WebApp";
+        internal const int MAX_HTTP2_FRAME_SIZE = 16384;
         private string IpAddress;
-        public static int Port { get; private set; }
+        internal static int Port { get; private set; }
         private X509Certificate2 Certificate;
-        public static Dictionary<string, Action<HTTP1Request, Response>> registerdActionsOnUrls;
+        internal static Dictionary<string, Action<HTTP1Request, Response>> registerdActionsOnUrls;
+        private List<HandleClient> clients = new List<HandleClient>();
 
 
         /*
@@ -43,8 +45,12 @@ namespace lib
             registerdActionsOnUrls = new Dictionary<string, Action<HTTP1Request, Response>>();
             IpAddress = ipAddress;
             Certificate = certificate;
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls;
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+            // Thread t = new Thread(Clean);
+            // t.Start();
+
         }
+
 
         public void Listen(int port)
         {
@@ -59,8 +65,10 @@ namespace lib
                 while (true)
                 {
                     TcpClient tcpClient = tcpListener.AcceptTcpClient();
+                    
                     HandleClient handleClient = new HandleClient();
                     handleClient.StartThreadForClient(tcpClient, Port, Certificate);
+                    clients.Add(handleClient);
                 }
             }
             catch (Exception ex)
@@ -83,6 +91,18 @@ namespace lib
         {
             registerdActionsOnUrls.Add(url, action);
         }
+
+        //private void Clean()
+        //{
+        //    while (cleanupThreadRunning)
+        //    {
+        //        var disconnectedClients = clients.FindAll(x => !x.Connected);
+        //        disconnectedClients.ForEach(y => y.Close());
+        //        clients.RemoveAll(u => !u.Connected);
+        //        Thread.Sleep(5000);
+        //    }
+        //}
+
 
         public static void testFrame(){
             var fc = new HTTP2Frame(128).AddHeaderPayload(new byte[6], 16,0x8,true, 0x2, true, false);

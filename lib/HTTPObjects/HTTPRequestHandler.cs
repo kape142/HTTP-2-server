@@ -3,35 +3,61 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using lib.Streams;
+using System.Runtime.CompilerServices;
+using Http2.Hpack;
 
+[assembly:InternalsVisibleTo("UnitTesting")]
 namespace lib.HTTPObjects
 {
-    public class HTTPRequestHandler
+    internal class HTTPRequestHandler
     {
-        private void GetDataFramesFromFile(Streams.HTTP2Stream stream, string url)
+        public static void SendFile(StreamHandler streamHandler, int streamId, string url)
         {
-            String file = null;
-            if (url == "")
+            FileInfo fi = new FileInfo(url);
+            if (!fi.Exists)
             {
-                file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\index.html";
+                // todo returner feilmelding file not found
+                return;
             }
-            else
+            // Send header
+            List<HeaderField> headers = new List<HeaderField>(){
+                new HeaderField{ Name = ":status", Value ="200", Sensitive = false },
+                new HeaderField{ Name = "content-type", Value = Mapping.MIME_MAP[fi.Extension], Sensitive = false },
+            };
+            byte[] commpresedHeaders = new byte[HTTP2Frame.SETTINGS_MAX_FRAME_SIZE];
+            // Encode a header block fragment into the output buffer
+            var headerBlockFragment = new ArraySegment<byte>(commpresedHeaders);
+            // komprimering
+            var encodeResult = streamHandler.owner.hpackEncoder.EncodeInto(headerBlockFragment, headers);
+            //Http2.Hpack.Encoder.Result encodeResult = Server.hPackEncoder.EncodeInto(headerBlockFragment, headers);
+            commpresedHeaders = new byte[encodeResult.UsedBytes];
+            // pick out the used bytes
+            for (int i = 0; i < commpresedHeaders.Length; i++)
             {
-                file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\" + url;
+                commpresedHeaders[i] = headerBlockFragment[i];
             }
-            FileInfo fi = new FileInfo(file);
-            if (!fi.Exists) return;
-            FileStream fs = fi.OpenRead();
-            BinaryReader reader = new BinaryReader(fs);
-            long length = fs.Length;
-            byte[] d = new byte[HTTP2Frame.SETTINGS_MAX_FRAME_SIZE];
-            for(long i = 0;  i<length; i+= HTTP2Frame.SETTINGS_MAX_FRAME_SIZE)
+
+            HTTP2Frame headerframe = new HTTP2Frame(streamId).AddHeaderPayload(commpresedHeaders, 0, true, false);
+            streamHandler.SendFrame(headerframe);
+
+            // send file
+            using (FileStream fs = fi.OpenRead())
+            using (BinaryReader reader = new BinaryReader(fs))
             {
-                reader.Read(d, HTTP2Frame.SETTINGS_MAX_FRAME_SIZE, (int) i);
-                //stream.AddFrame(new HTTP2Frame((int) stream.Id).AddDataPayload(d));
+                long length = fs.Length;
+                byte[] d = new byte[HTTP2Frame.SETTINGS_MAX_FRAME_SIZE];
+                for(long i = 0;  i<length-HTTP2Frame.SETTINGS_MAX_FRAME_SIZE; i+= HTTP2Frame.SETTINGS_MAX_FRAME_SIZE)
+                {
+                    reader.Read(d, 0, HTTP2Frame.SETTINGS_MAX_FRAME_SIZE);
+                    streamHandler.SendFrame(new HTTP2Frame((int) streamId).AddDataPayload(d));
+                }
+                int rest = (int) length % HTTP2Frame.SETTINGS_MAX_FRAME_SIZE;
+                if(rest > 0)
+                {
+                    reader.Read(d, 0, rest);
+                    streamHandler.SendFrame(new HTTP2Frame((int)streamId).AddDataPayload(d, 0, true));
+                }
             }
-            int rest = (int) length % HTTP2Frame.SETTINGS_MAX_FRAME_SIZE;
-            reader.Read(d, (int)length-rest, rest);
         }
     }
 }

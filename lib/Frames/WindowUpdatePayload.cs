@@ -7,7 +7,5 @@ namespace lib.Frames
     public struct WindowUpdatePayload
     {
         public int WindowSizeIncrement;
-
-
     }
 }

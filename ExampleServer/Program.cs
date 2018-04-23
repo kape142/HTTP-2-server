@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading;
 using lib;
 using lib.HTTPObjects;
 
@@ -10,9 +11,10 @@ namespace ExampleServer
     {
         static void Main(string[] args)
         {
-            //var serverCertificate = new X509Certificate2("Certificate/TcpTLSServer_TemporaryKey.pfx", "1234");
+            //lib.HandleClient.test();
+            var serverCertificate = new X509Certificate2("Certificate/TcpTLSServer_TemporaryKey.pfx", "1234");
             //Server server = new Server("10.22.190.99", null);
-            //Server server = new Server("10.0.0.142", serverCertificate);
+            Server server = new Server("10.22.190.99", serverCertificate);
 
             /*
             server.Get("/testurl", (req, res) =>
@@ -24,7 +26,7 @@ namespace ExampleServer
                 res.Send(b);
             });
             */
-            //server.Listen(80);
+            server.Listen(443);
 
             /*
             //Zip test
@@ -37,12 +39,36 @@ namespace ExampleServer
             Console.ReadLine();
             */
 
-            int i = 1823423647;
-            var b = BitConverter.GetBytes(i);
-            Array.Reverse(b);
-            foreach (byte by in b)
-                Console.Write($"{by} ");
-            Console.WriteLine(Bytes.ConvertFromIncompleteByteArray(b));
+            //Server.testFrame();
+            /*
+            ThreadTest t = new ThreadTest();
+            t.start();
+            Console.ReadLine();
+            t.alive = false;
+            Console.ReadLine();
+            */
         }
+
+        /*
+        class ThreadTest
+        {
+            public bool alive { get; set; } = true;
+            int rounds = 0;
+
+            public void start()
+            {
+                Thread t = new Thread(Run);
+                t.Start();
+            }
+            private void Run()
+            {
+                while (alive)
+                {
+                    Thread.Sleep(5000);
+                    Console.WriteLine("Running");
+                }
+            }
+        }
+        */
     }
 }

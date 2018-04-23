@@ -1,12 +1,14 @@
 ﻿using lib.Frames;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Text;
 using static lib.Bytes;
 
+[assembly: InternalsVisibleTo("UnitTesting")]
 namespace lib.HTTPObjects
 {
-    public class HTTP2Frame
+    internal class HTTP2Frame
     {
         public const int headerSize = 9;
 
@@ -25,11 +27,11 @@ namespace lib.HTTPObjects
 
         //Flags
         public const byte NO_FLAG = 0x0;
-        public const byte END_STREAM = 0x1;
-        public const byte END_HEADERS = 0x4;
-        public const byte PADDED = 0x8;
-        public const byte PRIORITY_FLAG = 0x20;
-        public const byte ACK = 0x1;
+        public const byte FLAG_END_STREAM = 0x1;
+        public const byte FLAG_END_HEADERS = 0x4;
+        public const byte FLAG_PADDED = 0x8;
+        public const byte FLAG_PRIORITY= 0x20;
+        public const byte FLAG_ACK = 0x1;
 
         //Settings Parameters
         public const ushort SETTINGS_HEADER_TABLE_SIZE = 0x1;
@@ -91,14 +93,39 @@ namespace lib.HTTPObjects
         public bool EndStream {
             get
             {
-                return ((Flag & END_STREAM) > 0);
+                return ((Flag & FLAG_END_STREAM) > 0);
             }
         }
-        public bool EndHeaders
+
+        public bool FlagEndHeaders
         {
             get
             {
-                return ((Flag & END_HEADERS) > 0);
+                return ((Flag & FLAG_END_HEADERS) > 0);
+            }
+        }
+
+        public bool FlagPadded
+        {
+            get
+            {
+                return ((Flag & FLAG_PADDED) > 0);
+            }
+        }
+
+        public bool FlagPriority
+        {
+            get
+            {
+                return ((Flag & FLAG_PRIORITY) > 0);
+            }
+        }
+
+        public bool FlagAck
+        {
+            get
+            {
+                return ((Flag & FLAG_ACK) > 0);
             }
         }
         public int PayloadLength
@@ -169,7 +196,7 @@ namespace lib.HTTPObjects
         public HTTP2Frame AddSettingsPayload((ushort identifier, uint value)[] settings, bool ack = false)
         {
             Type = SETTINGS;
-            Flag = ack ? ACK : NO_FLAG;
+            Flag = ack ? FLAG_ACK : NO_FLAG;
 
             var array = new byte[settings.Length * 6];
             int i = 0;
@@ -197,6 +224,7 @@ namespace lib.HTTPObjects
                 Payload = data;
             else
             {
+                Flag = FLAG_PADDED;
                 var array = new byte[1 + data.Length + paddingLength];
                 array[0] = paddingLength;
                 for (int i = 0; i < data.Length; i++)
@@ -208,7 +236,7 @@ namespace lib.HTTPObjects
 
         public HTTP2Frame AddHeaderPayload(byte[] data, byte paddingLength = 0x0, bool end_headers = false, bool end_stream = false)
         {
-            byte flag = (byte)((end_stream ? END_STREAM : NO_FLAG) | (end_headers ? END_HEADERS : NO_FLAG) | ((paddingLength != 0x0) ? PADDED : NO_FLAG));
+            byte flag = (byte)((end_stream ? FLAG_END_STREAM : NO_FLAG) | (end_headers ? FLAG_END_HEADERS : NO_FLAG) | ((paddingLength != 0x0) ? FLAG_PADDED : NO_FLAG));
             Type = HEADERS;
             Flag = flag;
             var array = new byte[data.Length + paddingLength + ((paddingLength > 0) ? 1 : 0)];
@@ -224,7 +252,7 @@ namespace lib.HTTPObjects
 
         public HTTP2Frame AddHeaderPayload(byte[] data, uint streamDependency, byte weight, bool exclusive, byte paddingLength = 0x0, bool end_headers = false, bool end_stream = false)
         {
-            byte flag = (byte)((end_stream ? END_STREAM : NO_FLAG) | (end_headers ? END_HEADERS : NO_FLAG) | ((paddingLength != 0x0) ? PADDED : NO_FLAG) | PRIORITY_FLAG);
+            byte flag = (byte)((end_stream ? FLAG_END_STREAM : NO_FLAG) | (end_headers ? FLAG_END_HEADERS : NO_FLAG) | ((paddingLength != 0x0) ? FLAG_PADDED : NO_FLAG) | FLAG_PRIORITY);
             Type = HEADERS;
             Flag = flag;
             var array = new byte[data.Length + 5 + paddingLength + ((paddingLength > 0) ? 1 : 0)];
@@ -308,7 +336,7 @@ namespace lib.HTTPObjects
         public HTTP2Frame AddContinuationFrame(byte[] headerBlockFragment, bool endHeaders = false)
         {
             Type = CONTINUATION;
-            Flag = endHeaders ? END_HEADERS : NO_FLAG;
+            Flag = endHeaders ? FLAG_END_HEADERS : NO_FLAG;
             Payload = headerBlockFragment;
             return this;
         }
@@ -385,10 +413,10 @@ namespace lib.HTTPObjects
             }
             byte[] headerPayload = Payload;
             int i = 0;
-            bool padded = (Flag & PADDED) > 0;
+            bool padded = (Flag & FLAG_PADDED) > 0;
             if (padded)
                 i++;
-            bool priority = (Flag & PRIORITY_FLAG) > 0;
+            bool priority = (Flag & FLAG_PRIORITY) > 0;
             if (priority)
                 i += 5;
             int dataLength = headerPayload.Length - i - (padded ? headerPayload[0] : 0);
@@ -421,12 +449,37 @@ namespace lib.HTTPObjects
             PriorityPayload pp = new PriorityPayload();
             pp.StreamDependencyIsExclusive = split.bit32;
             pp.StreamDependency = split.int31;
-            pp.Weight = GetPartOfPayload(4, 5)[0];
+            pp.Weight = GetPartOfPayload(3, 4)[0];
             return pp;
         }
 
+        public GoAwayPayload GetGoAwayPayloadDecoded()
+        {
+            GoAwayPayload gp = new GoAwayPayload();
+            var temp = Split32BitToBoolAnd31bitInt(ConvertFromIncompleteByteArray(GetPartOfPayload(0, 4)));
+            gp.r = temp.bit32;
+            gp.LastStreamId = temp.int31;
+            gp.ErrorCode = ConvertFromIncompleteByteArray(GetPartOfPayload(4, 8));
+            gp.AdditionalDebugData = Encoding.ASCII.GetString(GetPartOfPayload(8, PayloadLength));
+            return gp;
+        }
+
+        public static byte[] CombineHeaderPayloads(params HTTP2Frame[] frames)
         public RSTStreamPayload GetRSTStreamPayloadDecoded()
         {
+            List<byte> bytes = new List<byte>();
+            byte headerFlags = frames[0].Flag;
+            byte[] headerPayload = frames[0].Payload;
+            int i = 0;
+            bool padded = (headerFlags & FLAG_PADDED) > 0;
+            if (padded)
+                i++;
+            if ((headerFlags & FLAG_PRIORITY) > 0)
+                i += 5;
+            for(; i < headerPayload.Length-(padded?headerPayload[0]:0); i++)
+            {
+                bytes.Add(headerPayload[i]);
+            }
             if(Type != RST_STREAM)
                 throw new Exception("wrong type of frame requested");
             var rp = new RSTStreamPayload();
@@ -511,6 +564,21 @@ namespace lib.HTTPObjects
 
         private byte[] GetPartOfPayload(int start, int end)
         {
+            if ((end + headerSize) > byteArray.Length) return null;  // todo sjekk denne
+            return GetPartOfByteArray(start + headerSize, end + headerSize, byteArray);
+        }
+
+        public static (bool bit32, int int31) Split32BitToBoolAnd31bitInt(int i)
+        {
+            int _bit32 = (int)(i & 0b10000000000000000000000000000000);
+            bool _bit = (_bit32 == -2147483648) ? true : false;
+            int _uint32 = (int)(i & 0b01111111111111111111111111111111);
+            return (_bit, _uint32);
+        }
+
+        public static int PutBoolAndIntTo32bitInt(bool bit32, int int31)
+        {
+            return bit32 ? (int)(int31 | 0x80000000) : (int)(int31 & 0x7fffffff);
             if ((end + headerSize) > byteArray.Length) return null;  // todo sjekk denne
             return Bytes.GetPartOfByteArray(start + headerSize, end + headerSize, byteArray);
         }

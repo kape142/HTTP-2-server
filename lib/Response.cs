@@ -13,7 +13,7 @@ namespace lib
         public char[] Data { get; private set; }
 
 
-        public static Response From(HTTP1Request req)
+        internal static Response From(HTTP1Request req)
         {
             if (req == null)
             {
@@ -44,7 +44,7 @@ namespace lib
                             Console.WriteLine("Method not allowed: " + req.Type);
                             return new Response(Server.HTTP1V, "405 Method Not Allowed", null, new char[0]);
                     }
-                case "HTTP/2":
+                case "HTTP/2.0":
                     return null;
                 default:
                     Console.WriteLine("HTTP version not supported: " + req.Httpv);
@@ -128,6 +128,7 @@ namespace lib
         {
             this.Data = data;
         }
+
         private static Response HTTP1Response(HTTP1Request req, bool headrequest=false)
         {
             Console.WriteLine("Responding with http/1.1...");
@@ -146,16 +147,22 @@ namespace lib
             FileInfo fi = new FileInfo(file);
             if (fi.Exists)
             {
-                FileStream fs = fi.OpenRead();
-                BinaryReader reader = new BinaryReader(fs);
-                char[] d = new char[fs.Length];
-                reader.Read(d, 0, d.Length);
-                lst.Add("Content-Type", Mapping.MIME_MAP[fi.Extension]);
-                lst.Add("Accept-Ranges", "bytes");
-                lst.Add("Content-Length", d.Length.ToString());
-                lst.Add("Keep-Alive", "timeout=5, max=100");
-                lst.Add("Connection", "Keep-Alive");
-                return new Response(Server.HTTP1V, Server.OK, lst, (headrequest)? new char[0] : d);
+                using(FileStream fs = fi.OpenRead())
+                {
+                    using (BinaryReader reader = new BinaryReader(fs))
+                    {
+                        char[] d = new char[fs.Length];
+                        reader.Read(d, 0, d.Length);
+                        lst.Add("Content-Type", Mapping.MIME_MAP[fi.Extension]);
+                        lst.Add("Accept-Ranges", "bytes");
+                        lst.Add("Content-Length", d.Length.ToString());
+                        lst.Add("Keep-Alive", "timeout=5, max=100");
+                        lst.Add("Connection", "Keep-Alive");
+                        //char[] outarray = new char[d.Length*2];
+                        //Convert.ToBase64CharArray(d, 0, d.Length, outarray, 0);
+                        return new Response(Server.HTTP1V, Server.OK, lst, (headrequest)? new char[0] : d);
+                    }
+                }
             }
             else
             {
@@ -193,7 +200,7 @@ namespace lib
             return new Response(Server.HTTP1V, Server.ERROR, null, new char[0]);
         }
 
-        public Response(string httpv, string status, IDictionary<string, string> headerlines, char[] data)
+        private Response(string httpv, string status, IDictionary<string, string> headerlines, char[] data)
         {
             HTTPv = httpv;
             Status = status;

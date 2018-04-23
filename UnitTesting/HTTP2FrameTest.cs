@@ -159,5 +159,30 @@ namespace UnitTest
             Array.Reverse(b);
             Assert.Equal(ConvertFromIncompleteByteArray(b), i);
         }
+
+        [Fact]
+        public void TestPriorityPayload()
+        {
+            HTTP2Frame frame = new HTTP2Frame(1).AddPriorityPayload(true, 3, 10);
+            PriorityPayload pp = frame.GetPriorityPayloadDecoded();
+            Assert.True(pp.StreamDependencyIsExclusive);
+            Assert.True(pp.StreamDependency == 3);
+            Assert.True(pp.Weight == 10);
+
+            frame = new HTTP2Frame(1).AddPriorityPayload(false, 4);
+            pp = frame.GetPriorityPayloadDecoded();
+            Assert.False(pp.StreamDependencyIsExclusive);
+            Assert.True(pp.StreamDependency == 4);
+            Assert.True(pp.Weight == 0);
+        }
+
+        [Fact]
+        public void TestHeaderPayload()
+        {
+            byte[] data = { 1, 2, 3, 4 };
+            HTTP2Frame frame = new HTTP2Frame(1).AddHeaderPayload(data, 2, true, true);
+            HeaderPayload hh = frame.GetHeaderPayloadDecoded();
+        }
+
     }
 }
