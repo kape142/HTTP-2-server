@@ -262,7 +262,7 @@ namespace lib.HTTPObjects
             return this;
         }
 
-        public HTTP2Frame AddRSTStreamPayload(int errorcode)
+        public HTTP2Frame AddRSTStreamPayload(uint errorcode)
         {
             Flag = NO_FLAG;
             Type = RST_STREAM;
@@ -273,7 +273,7 @@ namespace lib.HTTPObjects
         public HTTP2Frame AddPushPromisePayload(int promisedStreamId, byte[] data, byte paddingLength = 0x0, bool endHeaders = false)
         {
             bool padded = paddingLength > 0;
-            Flag = (byte)((padded ? PADDED : NO_FLAG) & (endHeaders ? END_HEADERS : NO_FLAG));
+            Flag = (byte)((padded ? PADDED : NO_FLAG) | (endHeaders ? END_HEADERS : NO_FLAG));
             Type = PUSH_PROMISE;
             Payload = CombineByteArrays(((padded) ? new byte[] { paddingLength } : new byte[] { }),ExtractBytes(promisedStreamId),data);
             return this;
@@ -428,6 +428,15 @@ namespace lib.HTTPObjects
             return pp;
         }
 
+        public RSTStreamPayload GetRSTStreamPayloadDecoded()
+        {
+            if(Type != RST_STREAM)
+                throw new Exception("wrong type of frame requested");
+            var rp = new RSTStreamPayload();
+            rp.ErrorCode = ConvertFromIncompleteByteArrayUnsigned(Payload);
+            return rp;
+        }
+
         public SettingsPayload GetSettingsPayloadDecoded()
         {
             if (Type != SETTINGS)
@@ -439,12 +448,26 @@ namespace lib.HTTPObjects
             for(int i = 0; i < settingsLength;i++)
             {
                 int offset = i * 6;
-                ushort identifier = (ushort)ConvertFromIncompleteByteArray(Bytes.GetPartOfByteArray(offset, offset + 2, payload));
-                uint value = (uint)ConvertFromIncompleteByteArray(Bytes.GetPartOfByteArray(offset+2, offset + 6, payload));
+                ushort identifier = (ushort)ConvertFromIncompleteByteArrayUnsigned(Bytes.GetPartOfByteArray(offset, offset + 2, payload));
+                uint value = ConvertFromIncompleteByteArrayUnsigned(Bytes.GetPartOfByteArray(offset+2, offset + 6, payload));
                 settings[i] = (identifier, value);
             }
             sp.Settings = settings;
             return sp;
+        }
+
+        public PushPromisePayload GetPushPromisePayloadDecoded()
+        {
+            if(Type != PUSH_PROMISE)
+                throw new Exception("wrong type of frame requested");
+            var pp = new PushPromisePayload();
+            bool padded = ((Flag & PADDED) > 0);
+            
+            pp.PadLength = (byte)(padded ? GetPartOfPayload(0, 1)[0] : 0x0);
+            int i = padded ? 1 : 0;
+            pp.PromisedStreamID = ConvertFromIncompleteByteArray(GetPartOfPayload(i, i + 4));
+            pp.HeaderBlockFragment = GetPartOfPayload(i + 4, PayloadLength - pp.PadLength);
+            return pp;
         }
 
         //Static methods
