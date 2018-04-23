@@ -5,6 +5,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using lib.Frames;
 using lib.HTTPObjects;
+using Http2.Hpack;
+
 
 namespace lib.Streams
 {
@@ -14,11 +16,12 @@ namespace lib.Streams
         private List<HTTP2Stream> IncomingStreams = new List<HTTP2Stream>();
         private Queue<HTTP2Frame> framesToSend = new Queue<HTTP2Frame>();
         object lockFramesToSend = new object();
-        HandleClient Client;
+        public HandleClient owner { get; set; }
+        private bool sendFramesThreadAlive = true;
 
         public StreamHandler(HandleClient client)
         {
-            Client = client;
+            owner = client;
             IncomingStreams.Add(new HTTP2Stream(0));
         }
 
@@ -30,7 +33,7 @@ namespace lib.Streams
 
         private async void SendThread()
         {
-            while (true)
+            while (sendFramesThreadAlive)
             {
                 if(framesToSend.Count > 0)
                 {
@@ -40,7 +43,7 @@ namespace lib.Streams
                     {
                      frametosend = framesToSend.Dequeue();
                     }
-                    await Task.Run(() => Client.WriteFrame(frametosend));
+                    await Task.Run(() => owner.WriteFrame(frametosend));
                 }
                 else
                 {
@@ -57,7 +60,7 @@ namespace lib.Streams
             }
         }
 
-        public void addStream(HTTP2Stream stream)
+        public void AddStreamToOutgoing(HTTP2Stream stream)
         {
             if (stream.Dependency == 0)
             {
@@ -73,11 +76,16 @@ namespace lib.Streams
             
         }
 
+        public void AddStreamToIncomming(HTTP2Stream stream)
+        {
+            IncomingStreams.Add(stream);
+        }
+
         public void closeStream(HTTP2Stream inStream)
         {
             foreach(HTTP2Stream stream in inStream.dependencies)
             {
-                addStream(stream);
+                AddStreamToOutgoing(stream);
             }
         }
 
@@ -103,24 +111,24 @@ namespace lib.Streams
             HTTP2Stream streamToUpdate = findStreamById(stream.Id, OutgoingStreams, (stream.Dependency != 0));
             streamToUpdate.Dependency = stream.Dependency;
             streamToUpdate.Weight = stream.Weight;
-            addStream(streamToUpdate);
+            AddStreamToOutgoing(streamToUpdate);
         }
 
         //Todo: implement weighthandeling to get priorities right
-        void getFramesFromStreams()
-        {
-            foreach(HTTP2Stream stream in OutgoingStreams)
-            {
-                framesToSend.Enqueue(stream.Frames.Dequeue());
-            }
-        }
+        // void getFramesFromStreams()
+        // {
+        //     foreach(HTTP2Stream stream in OutgoingStreams)
+        //     {
+        //         framesToSend.Enqueue(stream.Frames.Dequeue());
+        //     }
+        // }
 
-        internal bool IncomingExist(int streamId)
+        internal bool IncomingStreamExist(int streamId)
         {
             return IncomingStreams.Exists(x => x.Id == streamId);
         }
 
-        internal HTTP2Stream GetIncomming(int streamId)
+        internal HTTP2Stream GetIncommingStreams(int streamId)
         {
             return IncomingStreams.Find(x => x.Id == streamId);
         }
@@ -134,6 +142,13 @@ namespace lib.Streams
                     break;
                 case HTTP2Frame.HEADERS:
                     Console.WriteLine("HEADERS frame recived");
+                    GetIncommingStreams(frame.StreamIdentifier).Frames.Add(frame);
+                    if (frame.FlagEndHeaders)
+                    {
+                        EndOfHeaders(frame.StreamIdentifier);
+                        break;
+                    }
+                    Console.WriteLine(frame.ToString());
                     break;
                 case HTTP2Frame.PRIORITY_TYPE:
                     Console.WriteLine("PRIORITY_TYPE frame recived");
@@ -148,6 +163,7 @@ namespace lib.Streams
                         // send protocol error
                         break;
                     }
+                    if (frame.FlagAck) break;
                     SendFrame(new HTTP2Frame(0).addSettingsPayload(new Tuple<short, int>[0], true));
                     break;
                 case HTTP2Frame.PUSH_PROMISE:
@@ -166,6 +182,12 @@ namespace lib.Streams
                     break;
                 case HTTP2Frame.CONTINUATION:
                     Console.WriteLine("CONTINUATION frame recived");
+                    GetIncommingStreams(frame.StreamIdentifier).Frames.Add(frame);
+                    if (frame.FlagEndHeaders)
+                    {
+                        EndOfHeaders(frame.StreamIdentifier);
+                        break;
+                    }
                     break;
                 default:
                     break;
@@ -179,7 +201,7 @@ namespace lib.Streams
         }
 
         // en annen metode har funnet ut at
-        void EndOfIncomingStream(int streamID)
+        void EndOfHeaders(int streamID)
         {
             int index = IncomingStreams.FindIndex(x => x.Id == streamID);
             HTTP2Stream currentstream = IncomingStreams[index];
@@ -187,40 +209,30 @@ namespace lib.Streams
             OutgoingStreams.Add(currentstream);
 
             // concatinate the payloads
-            HTTP2Frame[] frames = null;// hent rammer
-
-                 // først switch på type
-                 // så if på flag
-
-
-            // viss end er satt så behandle requesten
-            switch (index)
+            HTTP2Frame[] headers = currentstream.Frames.FindAll(x => x.Type == HTTP2Frame.HEADERS || x.Type == HTTP2Frame.CONTINUATION).ToArray();
+            byte[] payloads = HTTP2Frame.CombineHeaderPayloads(headers);
+            // decompress
+            var headerBlockFragment = new ArraySegment<byte>(payloads);
+            byte[] decompressedHeaders = new byte[HTTP2Frame.SETTINGS_MAX_FRAME_SIZE];
+            List<HeaderField> lstheaders = new List<HeaderField>();
+            var dencodeResult = owner.hpackDecoder.DecodeHeaderBlockFragment(headerBlockFragment, 100, lstheaders); // todo max header size
+            foreach (var item in lstheaders)
             {
-                case HTTP2Frame.DATA:
-                    break;
-                case HTTP2Frame.HEADERS:
-                    
-
-                    break;
-                case HTTP2Frame.PRIORITY_TYPE:
-                    break;
-                case HTTP2Frame.RST_STREAM:
-                    break;
-                case HTTP2Frame.SETTINGS:
-                    break;
-                case HTTP2Frame.PUSH_PROMISE:
-                    break;
-                case HTTP2Frame.PING:
-                    break;
-                case HTTP2Frame.GOAWAY:
-                    break;
-                case HTTP2Frame.WINDOW_UPDATE:
-                    break;
-                case HTTP2Frame.CONTINUATION:
-                    break;
-                default:
-                    break;
+                Console.WriteLine(item.Name + " " + item.Value);
             }
+            string method = lstheaders.Find(x => x.Name == ":method").Value;
+            string path = lstheaders.Find(x => x.Name == ":path").Value;
+
+            string file;
+            if (path == "/")
+            {
+                file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\index.html";
+            }
+            else
+            {
+                file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\" + path;
+            }
+            HTTPRequestHandler.SendFile(this, streamID, file);
 
         }
 
@@ -236,6 +248,14 @@ namespace lib.Streams
                 file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\" + url;
             }
             HTTPRequestHandler.SendFile(this, 1, file);
+        }
+
+        internal void Close()
+        {
+            sendFramesThreadAlive = false;
+            OutgoingStreams = null;
+            IncomingStreams = null;
+            framesToSend = null;
         }
     }
 

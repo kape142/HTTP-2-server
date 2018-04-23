@@ -22,7 +22,7 @@ namespace UnitTesting
             }
 
             HTTPRequestHandler.SendFile(streamHandler, 0, url);
-            Assert.True(streamHandler.GetIncomming(0).Frames.Count == nrOfFrames);
+            Assert.True(streamHandler.GetIncommingStreams(0).Frames.Count == nrOfFrames);
         }
     }
 }

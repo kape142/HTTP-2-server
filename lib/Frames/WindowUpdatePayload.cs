@@ -8,7 +8,7 @@ namespace lib.Frames
     {
         public int WindowSizeIncrement;
 
-        public void EncodeInto(byte[])
+        public void EncodeInto(byte[] test)
         {
 
         }

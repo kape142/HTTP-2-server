@@ -10,36 +10,71 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using lib.Streams;
+using System.Net;
 
 namespace lib
 {
     public class HandleClient
     {
+        private static int nrOfClientsMade = 0;
         TcpClient tcpClient;
         SslStream sslStream;
         StreamReader streamReader;
         StreamWriter streamWriter;
+        //NetworkStream networkStream;
         BinaryReader binaryReader;
         BinaryWriter binaryWriter;
         private object streamreaderlock = new object();
         private object streamwriterlock = new object();
+        private object binaryreaderlock = new object();
+        private object binarywriterlock = new object();
         bool HttpUpgraded = false;
         StreamHandler streamHandler;
-        
+        public Http2.Hpack.Encoder hpackEncoder { get; private set; }
+        public Http2.Hpack.Decoder hpackDecoder { get; private set; }
+        public bool Connected { get; private set; } = true;
+        public int ClientPort { get; private set; }
+        private byte[] http2ConnectionPreface = { 0x50, 0x52, 0x49, 0x20, 0x2a, 0x20, 0x48, 0x54, 0x54, 0x50, 0x2f, 0x32, 0x2e, 0x30, 0x0d, 0x0a, 0x0d, 0x0a, 0x53, 0x4d, 0x0d, 0x0a, 0x0d, 0x0a };
 
-        public void StartThreadForClient(TcpClient tcpClient, int port, X509Certificate2 certificate = null)
+        public HandleClient()
+        {
+            Console.WriteLine("Handleclient made: " + ++nrOfClientsMade);
+            hpackEncoder = new Http2.Hpack.Encoder();
+            hpackDecoder = new Http2.Hpack.Decoder();
+        }
+
+        
+        public async void StartThreadForClient(TcpClient tcpClient, int port, X509Certificate2 certificate = null)
         {
             this.tcpClient = tcpClient;
+
             try
             {
                 if(port == Server.HTTPS_PORT)
                 {
                     sslStream = new SslStream(tcpClient.GetStream(), false, App_CertificateValidation);
-                    sslStream.AuthenticateAsServer(certificate, false, SslProtocols.Tls12 | SslProtocols.Tls11 | SslProtocols.Tls, false);
+                    SslServerAuthenticationOptions options = new SslServerAuthenticationOptions();
+                    // SslApplicationProtocol protocol = new SslApplicationProtocol("http2");
+                    options.ApplicationProtocols = new List<SslApplicationProtocol>()
+                    {
+                        SslApplicationProtocol.Http2,
+                        SslApplicationProtocol.Http11
+                        // new SslApplicationProtocol("http11")
+                    };
+                    options.ServerCertificate = certificate;
+                    options.EnabledSslProtocols = SslProtocols.Tls12;
+                    options.ClientCertificateRequired = false;
+                    options.CertificateRevocationCheckMode = X509RevocationMode.NoCheck;
+                    
+                    await sslStream.AuthenticateAsServerAsync(options, CancellationToken.None);
+                    //sslStream.AuthenticateAsServer(certificate, false, SslProtocols.Tls12, false);
+                    HttpUpgraded = true;
                     streamReader = new StreamReader(sslStream);
                     streamWriter = new StreamWriter(sslStream);
                     binaryReader = new BinaryReader(sslStream);
                     binaryWriter = new BinaryWriter(sslStream);
+                    streamHandler = new StreamHandler(this);
+                    streamHandler.StartSendThread();
                 }
                 else
                 {
@@ -48,6 +83,9 @@ namespace lib
                     binaryReader = new BinaryReader(tcpClient.GetStream());
                     binaryWriter = new BinaryWriter(tcpClient.GetStream());
                 }
+                Console.WriteLine("New client connected---------------------------------");
+                ClientPort = ((IPEndPoint)tcpClient.Client.RemoteEndPoint).Port;
+                Console.WriteLine("From port " + ClientPort);
             }
             catch (Exception ex)
             {
@@ -63,7 +101,7 @@ namespace lib
 
         private async void StartReadingAsync()
         {
-            while (true)
+            while (Connected)
             {
                 if (!HttpUpgraded)
                 {
@@ -74,29 +112,17 @@ namespace lib
                         Response res = Response.From(req);
                         Console.WriteLine(res.ToString());
                         Task.Run(() => WriteResponse(res));
-                        // todo vent på preface
-                        if (req.IsUpgradeTo2)
+                         // todo vent på preface
+                         // force upgrade on browser type
+                         // User-Agent : Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36
+                         if (req.IsUpgradeTo2) // || req.HeaderLines.Contains(new KeyValuePair<string, string>("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36")))
                         {
                             streamHandler = new StreamHandler(this);
                             streamHandler.StartSendThread();
                             streamHandler.SendFrame(new HTTP2Frame(0).addSettingsPayload(new Tuple<short, int>[0])); // connection preface
-                            //streamHandler.SendFrame(new HTTP2Frame(test()));
-                             Console.WriteLine("Ny client");
                             streamHandler.RespondWithFirstHTTP2(req.HttpUrl);
                             HttpUpgraded = true;
 
-                            /*
-                            Task.Run(() => {
-                                Tuple<short, int>[] settings = new Tuple<short, int>[]
-                                {
-                                    Tuple.Create(HTTP2Frame.SETTINGS_MAX_CONCURRENT_STREAMS, 100),
-                                    Tuple.Create(HTTP2Frame.SETTINGS_INITIAL_WINDOW_SIZE, Server.MAX_HTTP2_FRAME_SIZE)
-                                };
-                                HTTP2Frame firstSettingsframe = new HTTP2Frame(0).addSettingsPayload(settings);
-                                //Console.WriteLine(firstSettingsframe);
-                                //WriteFrame(firstSettingsframe);
-                            });
-                            */
                         }
                     }, () => {
                         Thread.Sleep(100);
@@ -105,31 +131,43 @@ namespace lib
                 else
                 {
                     await ReadStreamToFrameBytes((framedata) => {
-                        HTTP2Frame frame = new HTTP2Frame(framedata);
-                        if (streamHandler.IncomingExist(frame.StreamIdentifier))
+                        // sjekk om preface eller ramme
+                        if (IsPreface(framedata))
                         {
-                            streamHandler.AddIncomingFrame(frame);
+                            Console.WriteLine("Connectionpreface recived");
+                            streamHandler.SendFrame(new HTTP2Frame(0).addSettingsPayload(new Tuple<short, int>[0], false));
                         }
                         else
                         {
-                            streamHandler.addStream(new HTTP2Stream((uint)frame.StreamIdentifier, StreamState.Open));
-                            streamHandler.AddIncomingFrame(frame);
+                            HTTP2Frame frame = new HTTP2Frame(framedata);
+                            if (streamHandler.IncomingStreamExist(frame.StreamIdentifier))
+                            {
+                                streamHandler.AddIncomingFrame(frame);
+                            }
+                            else
+                            {
+                                streamHandler.AddStreamToIncomming(new HTTP2Stream((uint)frame.StreamIdentifier, StreamState.Open));
+                                streamHandler.AddIncomingFrame(frame);
+                            }
                         }
-                        // HTTP2ResponsHandler.Handle(frame);
-                        // Console.WriteLine(frame.ToString());
-
                     }, () => {
                         Thread.Sleep(100);
                     });
                 }
-                
+                if (tcpClient.Client.Poll(0, SelectMode.SelectRead))
+                {
+                    byte[] checkConn = new byte[1];
+                    if (tcpClient.Client.Receive(checkConn, SocketFlags.Peek) == 0)
+                    {
+                        Console.WriteLine($"TcpClient disconnected from {ClientPort}");
+                        Connected = false;
+                    }
+                }
             }
+            Close();
         }
 
-        private async Task RespondToHTTP2Get(string url)
-        {
-
-        }
+        
 
         private async Task ReadStreamToString(Action<string> onRequest, Action onNoRequest)
         {
@@ -150,17 +188,24 @@ namespace lib
 
         private async Task ReadStreamToFrameBytes(Action<byte[]> framedata, Action onEmptyFrame)
         {
-            NetworkStream r = tcpClient.GetStream();
             byte[] myReadBuffer = new byte[3];
             int numberOfBytesRead = 0;
-
-            // Incoming message may be larger than the buffer size.
-            if(r.DataAvailable)
+            // lock (binaryreaderlock)
+            // {
+            //     numberOfBytesRead = binaryReader.Read(myReadBuffer, 0, myReadBuffer.Length);
+            // }
+            //numberOfBytesRead = binaryReader.Read(myReadBuffer, 0, myReadBuffer.Length);
+            if (tcpClient.GetStream().DataAvailable)
             {
-                numberOfBytesRead = await r.ReadAsync(myReadBuffer, 0, myReadBuffer.Length);
-                //Console.WriteLine("Mottar data: " + numberOfBytesRead);
+                lock (binaryreaderlock)
+                {
+                    numberOfBytesRead = binaryReader.Read(myReadBuffer, 0, myReadBuffer.Length);
+
+                }
             }
-            if(numberOfBytesRead == 3) // myReadBuffer != null && myReadBuffer.Length == 3 && myReadBuffer[0] != 0 && myReadBuffer[1] != 0 && myReadBuffer[2] != 0)
+            //numberOfBytesRead = await binaryReaderReadSync(myReadBuffer);
+
+            if (numberOfBytesRead == 3) // myReadBuffer != null && myReadBuffer.Length == 3 && myReadBuffer[0] != 0 && myReadBuffer[1] != 0 && myReadBuffer[2] != 0)
             {
                 bool littleEndian = BitConverter.IsLittleEndian;
                 byte[] source = myReadBuffer;
@@ -177,15 +222,10 @@ namespace lib
                 data[0] = source[0];
                 data[1] = source[1];
                 data[2] = source[2];
-
-                await r.ReadAsync(data, 3, length - 3);
-
-                // for (int i = 0; i < length; i++)
-                // {
-                //     Console.Write(data[i] + " ");
-                // }
-                // Console.WriteLine();
-
+                lock (binaryreaderlock)
+                {
+                    binaryReader.Read(data, 3, length - 3);
+                }
                 framedata(data);
             }
             else
@@ -193,6 +233,17 @@ namespace lib
                 onEmptyFrame();
             }
             
+        }
+
+        private async Task<int> binaryReaderReadSync(byte[] buffer)
+        {
+            int nr = 0;
+            lock (binaryreaderlock)
+            {
+                nr = binaryReader.Read(buffer, 0, buffer.Length);
+
+            }
+            return nr;
         }
 
         private async Task<string> streamReaderReadLineSync()
@@ -207,8 +258,11 @@ namespace lib
         {
             Console.WriteLine("Sender ramme: ");
             Console.WriteLine(frame.ToString());
-            binaryWriter.Flush();
-            binaryWriter.Write(frame.getBytes(), 0, frame.getBytes().Length);
+            lock (binaryWriter)
+            {
+                binaryWriter.Flush();
+                binaryWriter.Write(frame.getBytes(), 0, frame.getBytes().Length);
+            }
         }
         
         private async Task WriteResponse(Response r)
@@ -219,7 +273,7 @@ namespace lib
             // streamWriter.Flush();
             if (r.Data == null) return;
             streamWriterWriteSync(r.Data, 0, r.Data.Length);
-            streamWriter.Flush();
+            streamWriterFlushSync();
         }
 
         private void streamWriterWriteSync(string s)
@@ -358,6 +412,35 @@ namespace lib
             return bytes;
 
 
+        }
+
+        internal void Close()
+        {
+            try
+            {
+                Console.WriteLine("Handle Client closing...");
+                if(sslStream != null) sslStream.Dispose();
+                if(streamReader != null) streamReader.Dispose();
+                if(streamWriter != null) streamWriter.Dispose();
+                if(binaryReader != null) binaryReader.Dispose();
+                if(binaryWriter != null) binaryWriter.Dispose();
+                if(streamHandler != null) streamHandler.Close();
+                streamHandler = null;
+                hpackEncoder = null;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
+        }
+
+        bool IsPreface(byte[] data)
+        {
+            for (int i = 0; i < http2ConnectionPreface.Length; i++)
+            {
+                if (http2ConnectionPreface[i] != data[i]) return false;
+            }
+            return true;
         }
 
     }

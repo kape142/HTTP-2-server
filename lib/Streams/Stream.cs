@@ -23,7 +23,7 @@ namespace lib.Streams
         public uint Weight{get; set;} = 16;
         public List<HTTP2Stream> dependencies;
         public uint Dependency { get; set; } = 0;
-        public Queue<HTTP2Frame> Frames { get; set; }
+        public List<HTTP2Frame> Frames { get; set; }
 
         public StreamState State { get; set; } = StreamState.Idle;
 
@@ -31,7 +31,7 @@ namespace lib.Streams
         public HTTP2Stream(uint id, StreamState state=StreamState.Idle)
         {
             Id = id;
-            Frames = new Queue<HTTP2Frame>();
+            Frames = new List<HTTP2Frame>();
         }
 
         //TODO

@@ -4,6 +4,7 @@ using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Collections.Generic;
 using lib.HTTPObjects;
+using System.Threading;
 
 namespace lib
 {
@@ -19,10 +20,10 @@ namespace lib
         internal const string DIR = "WebApp";
         internal const int MAX_HTTP2_FRAME_SIZE = 16384;
         private string IpAddress;
-        internal static Http2.Hpack.Encoder hPackEncoder = new Http2.Hpack.Encoder();
         internal static int Port { get; private set; }
         private X509Certificate2 Certificate;
         internal static Dictionary<string, Action<HTTP1Request, Response>> registerdActionsOnUrls;
+        private List<HandleClient> clients = new List<HandleClient>();
 
 
         /*
@@ -44,8 +45,12 @@ namespace lib
             registerdActionsOnUrls = new Dictionary<string, Action<HTTP1Request, Response>>();
             IpAddress = ipAddress;
             Certificate = certificate;
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls;
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+            // Thread t = new Thread(Clean);
+            // t.Start();
+
         }
+
 
         public void Listen(int port)
         {
@@ -60,10 +65,10 @@ namespace lib
                 while (true)
                 {
                     TcpClient tcpClient = tcpListener.AcceptTcpClient();
-                    Console.WriteLine("New client connected---------------------------------");
-                    Console.WriteLine("On port " + ((IPEndPoint)tcpClient.Client.RemoteEndPoint).Port);
+                    
                     HandleClient handleClient = new HandleClient();
                     handleClient.StartThreadForClient(tcpClient, Port, Certificate);
+                    clients.Add(handleClient);
                 }
             }
             catch (Exception ex)
@@ -86,6 +91,18 @@ namespace lib
         {
             registerdActionsOnUrls.Add(url, action);
         }
+
+        //private void Clean()
+        //{
+        //    while (cleanupThreadRunning)
+        //    {
+        //        var disconnectedClients = clients.FindAll(x => !x.Connected);
+        //        disconnectedClients.ForEach(y => y.Close());
+        //        clients.RemoveAll(u => !u.Connected);
+        //        Thread.Sleep(5000);
+        //    }
+        //}
+
 
         public static void testFrame(){
             var fc = new HTTP2Frame(128).AddHeaderPayload(new byte[6], 16,0x8,true, 0x2, true, false);

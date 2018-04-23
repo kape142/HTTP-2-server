@@ -44,7 +44,7 @@ namespace lib
                             Console.WriteLine("Method not allowed: " + req.Type);
                             return new Response(Server.HTTP1V, "405 Method Not Allowed", null, new char[0]);
                     }
-                case "HTTP/2":
+                case "HTTP/2.0":
                     return null;
                 default:
                     Console.WriteLine("HTTP version not supported: " + req.Httpv);
