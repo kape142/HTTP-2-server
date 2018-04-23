@@ -16,10 +16,9 @@ namespace lib.HTTPObjects
             FileInfo fi = new FileInfo(url);
             if (!fi.Exists)
             {
-                // todo returner feilmelding file not found
+                SendNotFound(streamHandler, streamId);
                 return;
             }
-            // Send header
             List<HeaderField> headers = new List<HeaderField>(){
                 new HeaderField{ Name = ":status", Value ="200", Sensitive = false },
                 new HeaderField{ Name = "content-type", Value = Mapping.MIME_MAP[fi.Extension], Sensitive = false },
@@ -58,6 +57,28 @@ namespace lib.HTTPObjects
                     streamHandler.SendFrame(new HTTP2Frame((int)streamId).AddDataPayload(d, 0, true));
                 }
             }
+        }
+
+        private static void SendNotFound(StreamHandler streamHandler, int streamId)
+        {
+            List<HeaderField> headers =  new List<HeaderField>(){
+                new HeaderField{ Name = ":status", Value ="404", Sensitive = false }
+            };
+            byte[] commpresedHeaders = new byte[HTTP2Frame.SETTINGS_MAX_FRAME_SIZE];
+            // Encode a header block fragment into the output buffer
+            var headerBlockFragment = new ArraySegment<byte>(commpresedHeaders);
+            // komprimering
+            var encodeResult = streamHandler.owner.hpackEncoder.EncodeInto(headerBlockFragment, headers);
+            //Http2.Hpack.Encoder.Result encodeResult = Server.hPackEncoder.EncodeInto(headerBlockFragment, headers);
+            commpresedHeaders = new byte[encodeResult.UsedBytes];
+            // pick out the used bytes
+            for (int i = 0; i < commpresedHeaders.Length; i++)
+            {
+                commpresedHeaders[i] = headerBlockFragment[i];
+            }
+
+            HTTP2Frame headerframe = new HTTP2Frame(streamId).AddHeaderPayload(commpresedHeaders, 0, true, true);
+            streamHandler.SendFrame(headerframe);
         }
     }
 }
