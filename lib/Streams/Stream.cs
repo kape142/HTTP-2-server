@@ -34,6 +34,12 @@ namespace lib.Streams
             Frames = new List<HTTP2Frame>();
         }
 
+        public void addFrame(HTTP2Frame frame)
+        {
+            //frames.Enqueue(frame);
+        }
+
+
         //TODO
         void close()
         {

@@ -4,8 +4,9 @@ using System.Text;
 
 namespace lib.Frames
 {
-    public struct HeaderBlockFragment
+    public struct DataPayload
     {
-        public byte[] Bytearray { get; set; }
+        public byte PadLength;
+        public byte[] Data;
     }
 }
