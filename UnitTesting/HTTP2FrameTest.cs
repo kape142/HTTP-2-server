@@ -4,6 +4,7 @@ using lib;
 using lib.HTTPObjects;
 using static lib.HTTPObjects.HTTP2Frame;
 using static lib.Bytes;
+using lib.Frames;
 
 namespace UnitTest
 {
@@ -14,9 +15,7 @@ namespace UnitTest
         public void TestAddSettingsPayload()
         {
             var frame = new HTTP2Frame(8);
-            var settings = new Tuple<short, int>[2];
-            settings[0] = new Tuple<short, int>(SETTINGS_INITIAL_WINDOW_SIZE, 0x1000);
-            settings[1] = new Tuple<short, int>(SETTINGS_ENABLE_PUSH, 0x0);
+            var settings = new(ushort, uint)[] { (SETTINGS_INITIAL_WINDOW_SIZE, 0x1000), (SETTINGS_ENABLE_PUSH, 0x0) };
             frame.AddSettingsPayload(settings, true);
             byte[] bytes = frame.GetBytes();
             Assert.Equal(12, ConvertFromIncompleteByteArray(GetPartOfByteArray(0,3,bytes)));
@@ -27,6 +26,9 @@ namespace UnitTest
             Assert.Equal(0x1000, ConvertFromIncompleteByteArray(GetPartOfByteArray(11, 15, bytes)));
             Assert.Equal(SETTINGS_ENABLE_PUSH, ConvertFromIncompleteByteArray(GetPartOfByteArray(15, 17, bytes)));
             Assert.Equal(0x0, ConvertFromIncompleteByteArray(GetPartOfByteArray(17, 21, bytes)));
+
+            SettingsPayload sp = frame.GetSettingsPayloadDecoded();
+            Assert.Equal(settings, sp.Settings);
         }
 
         [Fact]
@@ -44,6 +46,11 @@ namespace UnitTest
             Assert.Equal(data, ConvertFromIncompleteByteArray(GetPartOfByteArray(10, 14, bytes)));
             Assert.Equal(new byte[16], GetPartOfByteArray(14, 30, bytes));
 
+            DataPayload dp = frame.GetDataPayloadDecoded();
+            Assert.Equal(ExtractBytes(data), dp.Data);
+            Assert.Equal(16, dp.PadLength);
+
+
             frame = new HTTP2Frame(5234);
             data = 523978457;
             frame.AddDataPayload(ExtractBytes(data), endStream: true);
@@ -53,6 +60,10 @@ namespace UnitTest
             Assert.Equal(END_STREAM, bytes[4]);
             Assert.Equal(5234, ConvertFromIncompleteByteArray(GetPartOfByteArray(5,9,bytes)));
             Assert.Equal(data, ConvertFromIncompleteByteArray(GetPartOfByteArray(9, 13, bytes)));
+
+            dp = frame.GetDataPayloadDecoded();
+            Assert.Equal(ExtractBytes(data), dp.Data);
+            Assert.Equal(0, dp.PadLength);
         }
 
         [Fact]
