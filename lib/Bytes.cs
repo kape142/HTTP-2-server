@@ -31,6 +31,14 @@ namespace lib
             return (target[0] << 24) + (target[1] << 16) + (target[2] << 8) + target[3];
         }
 
+        public static uint ConvertFromIncompleteByteArrayUnsigned(byte[] array)
+        {
+            byte[] target = new byte[4];
+            for (int i = 0; i < array.Length; i++)
+                target[i + (4 - array.Length)] = array[i];
+            return ((uint)target[0] << 24) + ((uint)target[1] << 16) + ((uint)target[2] << 8) + (uint)target[3];
+        }
+
         public static byte[] ConvertToByteArray(int number, int bytes = 4)
         {
             return ConvertToByteArray((long)number, bytes);
@@ -62,7 +70,23 @@ namespace lib
             return b;
         }
 
+        public static byte[] ExtractBytes(uint num)
+        {
+            byte[] b = new byte[4];
+            for (int i = 0; i < 4; i++)
+                b[i] = (byte)(num >> (24 - i * 8));
+            return b;
+        }
+
         public static byte[] ExtractBytes(short num)
+        {
+            byte[] b = new byte[2];
+            for (int i = 0; i < 2; i++)
+                b[i] = (byte)(num >> (8 - i * 8));
+            return b;
+        }
+
+        public static byte[] ExtractBytes(ushort num)
         {
             byte[] b = new byte[2];
             for (int i = 0; i < 2; i++)

@@ -14,7 +14,7 @@ namespace lib.HTTPObjects
         //Frame Types
         public const byte DATA = 0x0;
         public const byte HEADERS = 0x1;
-        public const byte PRIORITY_TYPE = 0x2
+        public const byte PRIORITY_TYPE = 0x2;
         public const byte RST_STREAM = 0x3;
         public const byte SETTINGS = 0x4;
         public const byte PUSH_PROMISE = 0x5;
@@ -32,12 +32,12 @@ namespace lib.HTTPObjects
         public const byte ACK = 0x1;
 
         //Settings Parameters
-        public const short SETTINGS_HEADER_TABLE_SIZE = 0x1;
-        public const short SETTINGS_ENABLE_PUSH = 0x2;
-        public const short SETTINGS_MAX_CONCURRENT_STREAMS = 0x3;
-        public const short SETTINGS_INITIAL_WINDOW_SIZE = 0x4;
-        public const short SETTINGS_MAX_FRAME_SIZE = 0x5;
-        public const short SETTINGS_MAX_HEADER_LIST_SIZE = 0x6;
+        public const ushort SETTINGS_HEADER_TABLE_SIZE = 0x1;
+        public const ushort SETTINGS_ENABLE_PUSH = 0x2;
+        public const ushort SETTINGS_MAX_CONCURRENT_STREAMS = 0x3;
+        public const ushort SETTINGS_INITIAL_WINDOW_SIZE = 0x4;
+        public const ushort SETTINGS_MAX_FRAME_SIZE = 0x5;
+        public const ushort SETTINGS_MAX_HEADER_LIST_SIZE = 0x6;
 
         //Error codes
         public const byte NO_ERROR = 0x0;
@@ -166,20 +166,20 @@ namespace lib.HTTPObjects
         }
 
         //Add Payload
-        public HTTP2Frame AddSettingsPayload(Tuple<short, int>[] settings, bool ack = false)
+        public HTTP2Frame AddSettingsPayload((ushort identifier, uint value)[] settings, bool ack = false)
         {
             Type = SETTINGS;
             Flag = ack ? ACK : NO_FLAG;
 
             var array = new byte[settings.Length * 6];
             int i = 0;
-            foreach (var tuple in settings)
+            foreach (var (identifier, value) in settings)
             {
-                var item1bytes = ConvertToByteArray(tuple.Item1, 2);
+                var item1bytes = ConvertToByteArray(identifier, 2);
                 foreach (byte b in item1bytes)
                     array[i++] = b;
 
-                var item2bytes = ConvertToByteArray(tuple.Item2, 4);
+                var item2bytes = ConvertToByteArray(value, 4);
                 foreach (byte b in item2bytes)
                     array[i++] = b;
             }
@@ -259,7 +259,7 @@ namespace lib.HTTPObjects
             return this;
         }
 
-        public HTTP2Frame AddRSTStreamPayload(int errorcode)
+        public HTTP2Frame AddRSTStreamPayload(uint errorcode)
         {
             Flag = NO_FLAG;
             Type = RST_STREAM;
@@ -270,7 +270,7 @@ namespace lib.HTTPObjects
         public HTTP2Frame AddPushPromisePayload(int promisedStreamId, byte[] data, byte paddingLength = 0x0, bool endHeaders = false)
         {
             bool padded = paddingLength > 0;
-            Flag = (byte)((padded ? PADDED : NO_FLAG) & (endHeaders ? END_HEADERS : NO_FLAG));
+            Flag = (byte)((padded ? PADDED : NO_FLAG) | (endHeaders ? END_HEADERS : NO_FLAG));
             Type = PUSH_PROMISE;
             Payload = CombineByteArrays(((padded) ? new byte[] { paddingLength } : new byte[] { }),ExtractBytes(promisedStreamId),data);
             return this;
@@ -364,6 +364,18 @@ namespace lib.HTTPObjects
 
         }
 
+        public DataPayload GetDataPayloadDecoded()
+        {
+            if (Type != DATA)
+                throw new Exception("wrong type of frame requested");
+            DataPayload dp = new DataPayload();
+            bool padded = ((Flag & PADDED) > 0);
+            dp.PadLength = (byte)(padded ? GetPartOfPayload(0, 1)[0] : 0x0);
+            byte[] data = GetPartOfPayload(padded?1:0, padded?PayloadLength-dp.PadLength:PayloadLength);
+            dp.Data = data;
+            return dp;
+        }
+
         public HeaderPayload GetHeaderPayloadDecoded()
         {
             if(Type != HEADERS)
@@ -394,7 +406,7 @@ namespace lib.HTTPObjects
                 hp.StreamDependency = temp.int31;
                 hp.Weight = GetPartOfPayload(5, 6)[0];
             }
-            hp.headerBlockFragment.bytearray = data;
+            hp.HeaderBlockFragment.Bytearray = data;
             return hp;
         }
 
@@ -410,6 +422,48 @@ namespace lib.HTTPObjects
             pp.StreamDependencyIsExclusive = split.bit32;
             pp.StreamDependency = split.int31;
             pp.Weight = GetPartOfPayload(4, 5)[0];
+            return pp;
+        }
+
+        public RSTStreamPayload GetRSTStreamPayloadDecoded()
+        {
+            if(Type != RST_STREAM)
+                throw new Exception("wrong type of frame requested");
+            var rp = new RSTStreamPayload();
+            rp.ErrorCode = ConvertFromIncompleteByteArrayUnsigned(Payload);
+            return rp;
+        }
+
+        public SettingsPayload GetSettingsPayloadDecoded()
+        {
+            if (Type != SETTINGS)
+                throw new Exception("wrong type of frame requested");
+            SettingsPayload sp = new SettingsPayload();
+            byte[] payload = Payload;
+            int settingsLength = payload.Length / 6;
+            var settings = new(ushort identifier, uint value)[settingsLength];
+            for(int i = 0; i < settingsLength;i++)
+            {
+                int offset = i * 6;
+                ushort identifier = (ushort)ConvertFromIncompleteByteArrayUnsigned(Bytes.GetPartOfByteArray(offset, offset + 2, payload));
+                uint value = ConvertFromIncompleteByteArrayUnsigned(Bytes.GetPartOfByteArray(offset+2, offset + 6, payload));
+                settings[i] = (identifier, value);
+            }
+            sp.Settings = settings;
+            return sp;
+        }
+
+        public PushPromisePayload GetPushPromisePayloadDecoded()
+        {
+            if(Type != PUSH_PROMISE)
+                throw new Exception("wrong type of frame requested");
+            var pp = new PushPromisePayload();
+            bool padded = ((Flag & PADDED) > 0);
+            
+            pp.PadLength = (byte)(padded ? GetPartOfPayload(0, 1)[0] : 0x0);
+            int i = padded ? 1 : 0;
+            pp.PromisedStreamID = ConvertFromIncompleteByteArray(GetPartOfPayload(i, i + 4));
+            pp.HeaderBlockFragment = GetPartOfPayload(i + 4, PayloadLength - pp.PadLength);
             return pp;
         }
 
@@ -450,8 +504,6 @@ namespace lib.HTTPObjects
             return bytes.ToArray();
         }
 
-        
-
         private byte[] GetPartOfByteArray(int start, int end)
         {
             return Bytes.GetPartOfByteArray(start, end, byteArray);
@@ -459,7 +511,7 @@ namespace lib.HTTPObjects
 
         private byte[] GetPartOfPayload(int start, int end)
         {
-            if ((end + headerSize) > byteArray.Length-1) return null;  // todo sjekk denne
+            if ((end + headerSize) > byteArray.Length) return null;  // todo sjekk denne
             return Bytes.GetPartOfByteArray(start + headerSize, end + headerSize, byteArray);
         }
     }

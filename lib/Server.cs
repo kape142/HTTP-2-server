@@ -17,7 +17,7 @@ namespace lib
         public const string ERROR = "400 Bad Request";
         public const string SERVER = "prosjekthttp2";
         public const string DIR = "WebApp";
-        public const int MAX_HTTP2_FRAME_SIZE = 16384;
+        public const uint MAX_HTTP2_FRAME_SIZE = 16384;
         private string IpAddress;
         public static int Port { get; private set; }
         private X509Certificate2 Certificate;

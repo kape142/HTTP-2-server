@@ -4,6 +4,7 @@ using lib;
 using lib.HTTPObjects;
 using static lib.HTTPObjects.HTTP2Frame;
 using static lib.Bytes;
+using lib.Frames;
 
 namespace UnitTest
 {
@@ -14,9 +15,7 @@ namespace UnitTest
         public void TestAddSettingsPayload()
         {
             var frame = new HTTP2Frame(8);
-            var settings = new Tuple<short, int>[2];
-            settings[0] = new Tuple<short, int>(SETTINGS_INITIAL_WINDOW_SIZE, 0x1000);
-            settings[1] = new Tuple<short, int>(SETTINGS_ENABLE_PUSH, 0x0);
+            var settings = new(ushort, uint)[] { (SETTINGS_INITIAL_WINDOW_SIZE, 0x1000), (SETTINGS_ENABLE_PUSH, 0x0) };
             frame.AddSettingsPayload(settings, true);
             byte[] bytes = frame.GetBytes();
             Assert.Equal(12, ConvertFromIncompleteByteArray(GetPartOfByteArray(0,3,bytes)));
@@ -27,6 +26,47 @@ namespace UnitTest
             Assert.Equal(0x1000, ConvertFromIncompleteByteArray(GetPartOfByteArray(11, 15, bytes)));
             Assert.Equal(SETTINGS_ENABLE_PUSH, ConvertFromIncompleteByteArray(GetPartOfByteArray(15, 17, bytes)));
             Assert.Equal(0x0, ConvertFromIncompleteByteArray(GetPartOfByteArray(17, 21, bytes)));
+
+            SettingsPayload sp = frame.GetSettingsPayloadDecoded();
+            Assert.Equal(settings, sp.Settings);
+        }
+
+        [Fact]
+        public void TestAddRSTPayload()
+        {
+            var frame = new HTTP2Frame(234);
+            uint error = 12938;
+            frame.AddRSTStreamPayload(error);
+            byte[] bytes = frame.GetBytes();
+            Assert.Equal(4, ConvertFromIncompleteByteArray(GetPartOfByteArray(0, 3, bytes)));
+            Assert.Equal(RST_STREAM, bytes[3]);
+            Assert.Equal(NO_FLAG, bytes[4]);
+            Assert.Equal(234, bytes[8]);
+            Assert.Equal(error, ConvertFromIncompleteByteArrayUnsigned(GetPartOfByteArray(9, 13, bytes)));
+
+            RSTStreamPayload rp = frame.GetRSTStreamPayloadDecoded();
+            Assert.Equal(error, rp.ErrorCode);
+        }
+
+        [Fact]
+        public void TestAddPushPromisePayload()
+        {
+            var frame = new HTTP2Frame(46);
+            int psi = 1783;
+            byte[] hbf = { 21, 34, 3, 4, 23, 4, 35, 3 };
+            frame.AddPushPromisePayload(psi, hbf, endHeaders: true);
+            byte[] bytes = frame.GetBytes();
+            Assert.Equal(12, ConvertFromIncompleteByteArray(GetPartOfByteArray(0, 3, bytes)));
+            Assert.Equal(PUSH_PROMISE, bytes[3]);
+            Assert.Equal(END_HEADERS, bytes[4]);
+            Assert.Equal(46, bytes[8]);
+            Assert.Equal(psi, ConvertFromIncompleteByteArray(GetPartOfByteArray(9, 13, bytes)));
+            Assert.Equal(hbf, GetPartOfByteArray(13, 21, bytes));
+
+            PushPromisePayload pp = frame.GetPushPromisePayloadDecoded();
+            Assert.Equal(psi, pp.PromisedStreamID);
+            Assert.Equal(hbf, pp.HeaderBlockFragment);
+            Assert.Equal(0, pp.PadLength);
         }
 
         [Fact]
@@ -44,6 +84,11 @@ namespace UnitTest
             Assert.Equal(data, ConvertFromIncompleteByteArray(GetPartOfByteArray(10, 14, bytes)));
             Assert.Equal(new byte[16], GetPartOfByteArray(14, 30, bytes));
 
+            DataPayload dp = frame.GetDataPayloadDecoded();
+            Assert.Equal(ExtractBytes(data), dp.Data);
+            Assert.Equal(16, dp.PadLength);
+
+
             frame = new HTTP2Frame(5234);
             data = 523978457;
             frame.AddDataPayload(ExtractBytes(data), endStream: true);
@@ -53,6 +98,10 @@ namespace UnitTest
             Assert.Equal(END_STREAM, bytes[4]);
             Assert.Equal(5234, ConvertFromIncompleteByteArray(GetPartOfByteArray(5,9,bytes)));
             Assert.Equal(data, ConvertFromIncompleteByteArray(GetPartOfByteArray(9, 13, bytes)));
+
+            dp = frame.GetDataPayloadDecoded();
+            Assert.Equal(ExtractBytes(data), dp.Data);
+            Assert.Equal(0, dp.PadLength);
         }
 
         [Fact]

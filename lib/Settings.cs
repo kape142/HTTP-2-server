@@ -4,7 +4,7 @@ using System.Text;
 
 namespace lib
 {
-    public enum SettingId : ushort
+    public enum SettingId : short
     {
         HeaderTableSize = 0x1,
         EnablePush = 0x2,
@@ -22,6 +22,23 @@ namespace lib
         public uint InitialWindowSize;
         public uint MaxFrameSize;
         public uint MaxHeaderListSize;
+
+        public Settings ApplySettings(Settings old, (ushort identifier, uint value)[] changes)
+        {
+            foreach(var (identifier, value) in changes)
+            {
+                switch (identifier)
+                {
+                    case (ushort)SettingId.HeaderTableSize:
+                        old.HeaderTableSize = value;
+                        break;
+                    default:
+                        throw new Exception("Bad setting identifier");
+
+                }
+            }
+            return old;
+        }
 
 
         //Default values as in RFC7540 [6.5.2]

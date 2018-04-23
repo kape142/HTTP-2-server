@@ -4,8 +4,8 @@ using System.Text;
 
 namespace lib.Frames
 {
-    public struct HeaderBlockFragment
+    public struct SettingsPayload
     {
-        public byte[] Bytearray { get; set; }
+        public (ushort identifier, uint value)[] Settings;
     }
 }
