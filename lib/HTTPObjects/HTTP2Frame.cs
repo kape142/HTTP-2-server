@@ -464,7 +464,7 @@ namespace lib.HTTPObjects
             return gp;
         }
 
-        public static byte[] CombineHeaderPayloads(params HTTP2Frame[] frames)
+        public static byte[] CombineHeaderPayloads(params HTTP2Frame[] frames);
         public RSTStreamPayload GetRSTStreamPayloadDecoded()
         {
             List<byte> bytes = new List<byte>();
