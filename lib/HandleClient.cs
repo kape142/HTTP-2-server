@@ -39,8 +39,7 @@ namespace lib
         public HandleClient()
         {
             Console.WriteLine("Handleclient made: " + ++nrOfClientsMade);
-            hpackEncoder = new Http2.Hpack.Encoder();
-            hpackDecoder = new Http2.Hpack.Decoder();
+            
         }
 
         
@@ -50,31 +49,27 @@ namespace lib
 
             try
             {
-                if(port == Server.HTTPS_PORT)
+                if(certificate != null)
                 {
                     sslStream = new SslStream(tcpClient.GetStream(), false, App_CertificateValidation);
                     SslServerAuthenticationOptions options = new SslServerAuthenticationOptions();
-                    // SslApplicationProtocol protocol = new SslApplicationProtocol("http2");
                     options.ApplicationProtocols = new List<SslApplicationProtocol>()
                     {
                         SslApplicationProtocol.Http2,
                         SslApplicationProtocol.Http11
-                        // new SslApplicationProtocol("http11")
                     };
                     options.ServerCertificate = certificate;
                     options.EnabledSslProtocols = SslProtocols.Tls12;
                     options.ClientCertificateRequired = false;
                     options.CertificateRevocationCheckMode = X509RevocationMode.NoCheck;
-                    
+
                     await sslStream.AuthenticateAsServerAsync(options, CancellationToken.None);
-                    //sslStream.AuthenticateAsServer(certificate, false, SslProtocols.Tls12, false);
-                    HttpUpgraded = true;
+                    if (sslStream.NegotiatedApplicationProtocol == SslApplicationProtocol.Http2) InitUpgradeToHttp2();
                     streamReader = new StreamReader(sslStream);
                     streamWriter = new StreamWriter(sslStream);
                     binaryReader = new BinaryReader(sslStream);
                     binaryWriter = new BinaryWriter(sslStream);
-                    streamHandler = new StreamHandler(this);
-                    streamHandler.StartSendThread();
+                    Console.WriteLine("New client connected with TLS 1.2---------------------------------");
                 }
                 else
                 {
@@ -82,8 +77,8 @@ namespace lib
                     streamWriter = new StreamWriter(tcpClient.GetStream());
                     binaryReader = new BinaryReader(tcpClient.GetStream());
                     binaryWriter = new BinaryWriter(tcpClient.GetStream());
+                    Console.WriteLine("New client connected---------------------------------");
                 }
-                Console.WriteLine("New client connected---------------------------------");
                 ClientPort = ((IPEndPoint)tcpClient.Client.RemoteEndPoint).Port;
                 Console.WriteLine("From port " + ClientPort);
             }
@@ -117,26 +112,9 @@ namespace lib
                          // User-Agent : Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36
                          if (req.IsUpgradeTo2) // || req.HeaderLines.Contains(new KeyValuePair<string, string>("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36")))
                         {
-                            streamHandler = new StreamHandler(this);
-                            streamHandler.StartSendThread();
-                            streamHandler.SendFrame(new HTTP2Frame(0).addSettingsPayload(new Tuple<short, int>[0])); // connection preface
+                            InitUpgradeToHttp2();
+                            streamHandler.SendFrame(new HTTP2Frame(0).AddSettingsPayload(new(ushort, uint)[0])); // connection preface
                             streamHandler.RespondWithFirstHTTP2(req.HttpUrl);
-                            HttpUpgraded = true;
-
-                            });
-
-                            Task.Run(() => {
-                                //HTTP2Frame connectionpreface = new HTTP2Frame(0).AddSettingsPayload(HTTP2Frame.ACK, new Tuple<byte, int>[0]);
-                                //WriteFrame(connectionpreface);
-                                var settings = new (ushort,uint)[]
-                                {
-                                    (HTTP2Frame.SETTINGS_MAX_CONCURRENT_STREAMS, 100),
-                                    (HTTP2Frame.SETTINGS_INITIAL_WINDOW_SIZE, Server.MAX_HTTP2_FRAME_SIZE)
-                                };
-                                HTTP2Frame firstSettingsframe = new HTTP2Frame(0).AddSettingsPayload(settings);
-                                Console.WriteLine(firstSettingsframe);
-                                WriteFrame(firstSettingsframe);
-                            });
                         }
                     }, () => {
                         Thread.Sleep(100);
@@ -149,7 +127,7 @@ namespace lib
                         if (IsPreface(framedata))
                         {
                             Console.WriteLine("Connectionpreface recived");
-                            streamHandler.SendFrame(new HTTP2Frame(0).addSettingsPayload(new Tuple<short, int>[0], false));
+                            streamHandler.SendFrame(new HTTP2Frame(0).AddSettingsPayload(new(ushort, uint)[0], false));
                         }
                         else
                         {
@@ -171,32 +149,52 @@ namespace lib
                 if (tcpClient.Client.Poll(0, SelectMode.SelectRead))
                 {
                     byte[] checkConn = new byte[1];
-                    if (tcpClient.Client.Receive(checkConn, SocketFlags.Peek) == 0)
+                    if (!tcpClient.Connected)
                     {
                         Console.WriteLine($"TcpClient disconnected from {ClientPort}");
                         Connected = false;
                     }
+                    //else if (tcpClient.Client.Receive(checkConn, SocketFlags.Peek) == 0)
+                    //{
+                    //    Console.WriteLine($"TcpClient disconnected from {ClientPort}");
+                    //    Connected = false;
+                    //}
                 }
             }
             Close();
         }
 
-        
+        private void InitUpgradeToHttp2()
+        {
+            hpackEncoder = new Http2.Hpack.Encoder();
+            hpackDecoder = new Http2.Hpack.Decoder();
+            streamHandler = new StreamHandler(this);
+            streamHandler.StartSendThread();
+            HttpUpgraded = true;
+        }
+
 
         private async Task ReadStreamToString(Action<string> onRequest, Action onNoRequest)
         {
-            string msg = "";
-            while (streamReader.Peek() != -1)
+            try
             {
-                msg += await streamReaderReadLineSync() + "\n";
+                string msg = "";
+                while (streamReader.Peek() != -1)
+                {
+                    msg += await streamReaderReadLineSync() + "\n";
+                }
+                if(msg.Length > 5)
+                {
+                    onRequest(msg);
+                }
+                else
+                {
+                    onNoRequest();
+                }
             }
-            if(msg.Length > 5)
+            catch (Exception ex)
             {
-                onRequest(msg);
-            }
-            else
-            {
-                onNoRequest();
+                Console.WriteLine("ReadStreamToString()\n" + ex);
             }
         }
 
@@ -270,24 +268,38 @@ namespace lib
 
         internal async Task WriteFrame(HTTP2Frame frame)
         {
-            Console.WriteLine("Sender ramme: ");
-            Console.WriteLine(frame.ToString());
-            lock (binaryWriter)
+            try
             {
-                binaryWriter.Flush();
-                binaryWriter.Write(frame.getBytes(), 0, frame.getBytes().Length);
+                Console.WriteLine("Sender ramme: ");
+                Console.WriteLine(frame.ToString());
+                lock (binaryWriter)
+                {
+                    binaryWriter.Flush();
+                    binaryWriter.Write(frame.GetBytes(), 0, frame.GetBytes().Length);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("WriteFrame()\n" + ex);
             }
         }
         
         private async Task WriteResponse(Response r)
         {
-            if (r == null) return;
-            streamWriterFlushSync();
-            streamWriterWriteSync(r.ToString());
-            // streamWriter.Flush();
-            if (r.Data == null) return;
-            streamWriterWriteSync(r.Data, 0, r.Data.Length);
-            streamWriterFlushSync();
+            try
+            {
+                if (r == null) return;
+                streamWriterFlushSync();
+                streamWriterWriteSync(r.ToString());
+                // streamWriter.Flush();
+                if (r.Data == null) return;
+                streamWriterWriteSync(r.Data, 0, r.Data.Length);
+                streamWriterFlushSync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("WriteResponse()\n" + ex);
+            }
         }
 
         private void streamWriterWriteSync(string s)

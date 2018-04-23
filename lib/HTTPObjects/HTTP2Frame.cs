@@ -38,7 +38,7 @@ namespace lib.HTTPObjects
         public const ushort SETTINGS_ENABLE_PUSH = 0x2;
         public const ushort SETTINGS_MAX_CONCURRENT_STREAMS = 0x3;
         public const ushort SETTINGS_INITIAL_WINDOW_SIZE = 0x4;
-        public const ushort SETTINGS_MAX_FRAME_SIZE = 0x5;
+        public const ushort SETTINGS_MAX_FRAME_SIZE = 16384;
         public const ushort SETTINGS_MAX_HEADER_LIST_SIZE = 0x6;
 
         //Error codes
@@ -90,7 +90,8 @@ namespace lib.HTTPObjects
                 byteArray[4] = value;
             }
         }
-        public bool EndStream {
+
+        public bool FlagEndStream {
             get
             {
                 return ((Flag & FLAG_END_STREAM) > 0);
@@ -218,13 +219,12 @@ namespace lib.HTTPObjects
         {
             Type = DATA;
             bool padded = paddingLength > 0;
-            Flag = (byte) ((padded ? PADDED : NO_FLAG) | (endStream ? END_STREAM : NO_FLAG));
+            Flag = (byte) ((padded ? FLAG_PADDED : NO_FLAG) | (endStream ? FLAG_END_STREAM : NO_FLAG));
 
             if (!padded)
                 Payload = data;
             else
             {
-                Flag = FLAG_PADDED;
                 var array = new byte[1 + data.Length + paddingLength];
                 array[0] = paddingLength;
                 for (int i = 0; i < data.Length; i++)
@@ -298,7 +298,7 @@ namespace lib.HTTPObjects
         public HTTP2Frame AddPushPromisePayload(int promisedStreamId, byte[] data, byte paddingLength = 0x0, bool endHeaders = false)
         {
             bool padded = paddingLength > 0;
-            Flag = (byte)((padded ? PADDED : NO_FLAG) | (endHeaders ? END_HEADERS : NO_FLAG));
+            Flag = (byte)((padded ? FLAG_PADDED : NO_FLAG) | (endHeaders ? FLAG_END_HEADERS : NO_FLAG));
             Type = PUSH_PROMISE;
             Payload = CombineByteArrays(((padded) ? new byte[] { paddingLength } : new byte[] { }),ExtractBytes(promisedStreamId),data);
             return this;
@@ -312,7 +312,7 @@ namespace lib.HTTPObjects
         public HTTP2Frame AddPingPayload(byte[] opaqueData, bool ack = false)
         {
             Type = PING;
-            Flag = ack?ACK:NO_FLAG;
+            Flag = ack? FLAG_ACK : NO_FLAG;
             Payload = opaqueData;
             return this;
         }
@@ -384,7 +384,7 @@ namespace lib.HTTPObjects
                     break;
             }
             s.Append(", ");
-            s.Append($"Flag: {this.Flag}, ");
+            s.Append($"Flag: {this.Flag}, End Headers: {FlagEndHeaders} End Stream: {FlagEndStream} Ack: {FlagAck}");
             s.Append($"Length: {this.PayloadLength}, ");
             s.Append($"Stream identifier: {this.StreamIdentifier}");
 
@@ -397,7 +397,7 @@ namespace lib.HTTPObjects
             if (Type != DATA)
                 throw new Exception("wrong type of frame requested");
             DataPayload dp = new DataPayload();
-            bool padded = ((Flag & PADDED) > 0);
+            bool padded = ((Flag & FLAG_PADDED) > 0);
             dp.PadLength = (byte)(padded ? GetPartOfPayload(0, 1)[0] : 0x0);
             byte[] data = GetPartOfPayload(padded?1:0, padded?PayloadLength-dp.PadLength:PayloadLength);
             dp.Data = data;
@@ -464,23 +464,9 @@ namespace lib.HTTPObjects
             return gp;
         }
 
-        public static byte[] CombineHeaderPayloads(params HTTP2Frame[] frames)
         public RSTStreamPayload GetRSTStreamPayloadDecoded()
         {
-            List<byte> bytes = new List<byte>();
-            byte headerFlags = frames[0].Flag;
-            byte[] headerPayload = frames[0].Payload;
-            int i = 0;
-            bool padded = (headerFlags & FLAG_PADDED) > 0;
-            if (padded)
-                i++;
-            if ((headerFlags & FLAG_PRIORITY) > 0)
-                i += 5;
-            for(; i < headerPayload.Length-(padded?headerPayload[0]:0); i++)
-            {
-                bytes.Add(headerPayload[i]);
-            }
-            if(Type != RST_STREAM)
+            if (Type != RST_STREAM)
                 throw new Exception("wrong type of frame requested");
             var rp = new RSTStreamPayload();
             rp.ErrorCode = ConvertFromIncompleteByteArrayUnsigned(Payload);
@@ -511,7 +497,7 @@ namespace lib.HTTPObjects
             if(Type != PUSH_PROMISE)
                 throw new Exception("wrong type of frame requested");
             var pp = new PushPromisePayload();
-            bool padded = ((Flag & PADDED) > 0);
+            bool padded = ((Flag & FLAG_PADDED) > 0);
             
             pp.PadLength = (byte)(padded ? GetPartOfPayload(0, 1)[0] : 0x0);
             int i = padded ? 1 : 0;
@@ -564,21 +550,6 @@ namespace lib.HTTPObjects
 
         private byte[] GetPartOfPayload(int start, int end)
         {
-            if ((end + headerSize) > byteArray.Length) return null;  // todo sjekk denne
-            return GetPartOfByteArray(start + headerSize, end + headerSize, byteArray);
-        }
-
-        public static (bool bit32, int int31) Split32BitToBoolAnd31bitInt(int i)
-        {
-            int _bit32 = (int)(i & 0b10000000000000000000000000000000);
-            bool _bit = (_bit32 == -2147483648) ? true : false;
-            int _uint32 = (int)(i & 0b01111111111111111111111111111111);
-            return (_bit, _uint32);
-        }
-
-        public static int PutBoolAndIntTo32bitInt(bool bit32, int int31)
-        {
-            return bit32 ? (int)(int31 | 0x80000000) : (int)(int31 & 0x7fffffff);
             if ((end + headerSize) > byteArray.Length) return null;  // todo sjekk denne
             return Bytes.GetPartOfByteArray(start + headerSize, end + headerSize, byteArray);
         }
