@@ -38,7 +38,7 @@ namespace lib.HTTPObjects
         public const ushort SETTINGS_ENABLE_PUSH = 0x2;
         public const ushort SETTINGS_MAX_CONCURRENT_STREAMS = 0x3;
         public const ushort SETTINGS_INITIAL_WINDOW_SIZE = 0x4;
-        public const ushort SETTINGS_MAX_FRAME_SIZE = 0x5;
+        public const ushort SETTINGS_MAX_FRAME_SIZE = 16384;
         public const ushort SETTINGS_MAX_HEADER_LIST_SIZE = 0x6;
 
         //Error codes
@@ -219,7 +219,7 @@ namespace lib.HTTPObjects
         {
             Type = DATA;
             bool padded = paddingLength > 0;
-            Flag = (byte) ((padded ? PADDED : NO_FLAG) | (endStream ? END_STREAM : NO_FLAG));
+            Flag = (byte) ((padded ? FLAG_PADDED : NO_FLAG) | (endStream ? FLAG_END_STREAM : NO_FLAG));
 
             if (!padded)
                 Payload = data;
@@ -298,7 +298,7 @@ namespace lib.HTTPObjects
         public HTTP2Frame AddPushPromisePayload(int promisedStreamId, byte[] data, byte paddingLength = 0x0, bool endHeaders = false)
         {
             bool padded = paddingLength > 0;
-            Flag = (byte)((padded ? PADDED : NO_FLAG) | (endHeaders ? END_HEADERS : NO_FLAG));
+            Flag = (byte)((padded ? FLAG_PADDED : NO_FLAG) | (endHeaders ? FLAG_END_HEADERS : NO_FLAG));
             Type = PUSH_PROMISE;
             Payload = CombineByteArrays(((padded) ? new byte[] { paddingLength } : new byte[] { }),ExtractBytes(promisedStreamId),data);
             return this;
@@ -312,7 +312,7 @@ namespace lib.HTTPObjects
         public HTTP2Frame AddPingPayload(byte[] opaqueData, bool ack = false)
         {
             Type = PING;
-            Flag = ack?ACK:NO_FLAG;
+            Flag = ack? FLAG_ACK : NO_FLAG;
             Payload = opaqueData;
             return this;
         }
@@ -397,7 +397,7 @@ namespace lib.HTTPObjects
             if (Type != DATA)
                 throw new Exception("wrong type of frame requested");
             DataPayload dp = new DataPayload();
-            bool padded = ((Flag & PADDED) > 0);
+            bool padded = ((Flag & FLAG_PADDED) > 0);
             dp.PadLength = (byte)(padded ? GetPartOfPayload(0, 1)[0] : 0x0);
             byte[] data = GetPartOfPayload(padded?1:0, padded?PayloadLength-dp.PadLength:PayloadLength);
             dp.Data = data;
@@ -497,7 +497,7 @@ namespace lib.HTTPObjects
             if(Type != PUSH_PROMISE)
                 throw new Exception("wrong type of frame requested");
             var pp = new PushPromisePayload();
-            bool padded = ((Flag & PADDED) > 0);
+            bool padded = ((Flag & FLAG_PADDED) > 0);
             
             pp.PadLength = (byte)(padded ? GetPartOfPayload(0, 1)[0] : 0x0);
             int i = padded ? 1 : 0;
@@ -526,10 +526,10 @@ namespace lib.HTTPObjects
             byte headerFlags = frames[0].Flag;
             byte[] headerPayload = frames[0].Payload;
             int i = 0;
-            bool padded = (headerFlags & PADDED) > 0;
+            bool padded = (headerFlags & FLAG_PADDED) > 0;
             if (padded)
                 i++;
-            if ((headerFlags & PRIORITY_FLAG) > 0)
+            if ((headerFlags & FLAG_PRIORITY) > 0)
                 i += 5;
             for(; i < headerPayload.Length-(padded?headerPayload[0]:0); i++)
             {

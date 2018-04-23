@@ -17,7 +17,9 @@ namespace lib.Streams
         private List<HTTP2Stream> IncomingStreams = new List<HTTP2Stream>();
         private Queue<HTTP2Frame> framesToSend = new Queue<HTTP2Frame>();
         object lockFramesToSend = new object();
-        HandleClient Client;
+        internal HandleClient owner; 
+        private bool sendFramesThreadAlive = true;
+        int streamIdTracker = 0;
 
         public StreamHandler(HandleClient client)
         {
@@ -164,7 +166,7 @@ namespace lib.Streams
                         break;
                     }
                     if (frame.FlagAck) break;
-                    SendFrame(new HTTP2Frame(0).addSettingsPayload(new Tuple<short, int>[0], true));
+                    SendFrame(new HTTP2Frame(0).AddSettingsPayload(new (ushort, uint)[0], true));
                     break;
                 case HTTP2Frame.PUSH_PROMISE:
                     Console.WriteLine("PUSH_PROMISE frame recived\n" + frame.ToString());
@@ -245,16 +247,16 @@ namespace lib.Streams
                 HTTPRequestHandler.SendFile(this, 1, file);
                 
                 //Server Push simple
-                file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\style.css";
-                if (File.Exists(file))
-                {
-                    HTTPRequestHandler.SendFile(this, streamIdTracker++, file);
-                }
-                file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\script.js";
-                if (File.Exists(file))
-                {
-                    HTTPRequestHandler.SendFile(this, streamIdTracker++, file);
-                }
+                // file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\style.css";
+                // if (File.Exists(file))
+                // {
+                //     HTTPRequestHandler.SendFile(this, streamIdTracker++, file);
+                // }
+                // file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\script.js";
+                // if (File.Exists(file))
+                // {
+                //     HTTPRequestHandler.SendFile(this, streamIdTracker++, file);
+                // }
             }
             else
             {

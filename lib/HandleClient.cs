@@ -113,7 +113,7 @@ namespace lib
                          if (req.IsUpgradeTo2) // || req.HeaderLines.Contains(new KeyValuePair<string, string>("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36")))
                         {
                             InitUpgradeToHttp2();
-                            streamHandler.SendFrame(new HTTP2Frame(0).addSettingsPayload(new Tuple<short, int>[0])); // connection preface
+                            streamHandler.SendFrame(new HTTP2Frame(0).AddSettingsPayload(new(ushort, uint)[0])); // connection preface
                             streamHandler.RespondWithFirstHTTP2(req.HttpUrl);
                         }
                     }, () => {
@@ -127,7 +127,7 @@ namespace lib
                         if (IsPreface(framedata))
                         {
                             Console.WriteLine("Connectionpreface recived");
-                            streamHandler.SendFrame(new HTTP2Frame(0).addSettingsPayload(new Tuple<short, int>[0], false));
+                            streamHandler.SendFrame(new HTTP2Frame(0).AddSettingsPayload(new(ushort, uint)[0], false));
                         }
                         else
                         {
@@ -275,7 +275,7 @@ namespace lib
                 lock (binaryWriter)
                 {
                     binaryWriter.Flush();
-                    binaryWriter.Write(frame.getBytes(), 0, frame.getBytes().Length);
+                    binaryWriter.Write(frame.GetBytes(), 0, frame.GetBytes().Length);
                 }
             }
             catch (Exception ex)

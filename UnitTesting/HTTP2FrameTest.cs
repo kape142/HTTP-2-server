@@ -20,7 +20,7 @@ namespace UnitTest
             byte[] bytes = frame.GetBytes();
             Assert.Equal(12, ConvertFromIncompleteByteArray(GetPartOfByteArray(0,3,bytes)));
             Assert.Equal(SETTINGS, bytes[3]);
-            Assert.Equal(ACK, bytes[4]);
+            Assert.Equal(FLAG_ACK, bytes[4]);
             Assert.Equal(8, bytes[8]);
             Assert.Equal(SETTINGS_INITIAL_WINDOW_SIZE, ConvertFromIncompleteByteArray(GetPartOfByteArray(9, 11, bytes)));
             Assert.Equal(0x1000, ConvertFromIncompleteByteArray(GetPartOfByteArray(11, 15, bytes)));
@@ -58,7 +58,7 @@ namespace UnitTest
             byte[] bytes = frame.GetBytes();
             Assert.Equal(12, ConvertFromIncompleteByteArray(GetPartOfByteArray(0, 3, bytes)));
             Assert.Equal(PUSH_PROMISE, bytes[3]);
-            Assert.Equal(END_HEADERS, bytes[4]);
+            Assert.Equal(FLAG_END_HEADERS, bytes[4]);
             Assert.Equal(46, bytes[8]);
             Assert.Equal(psi, ConvertFromIncompleteByteArray(GetPartOfByteArray(9, 13, bytes)));
             Assert.Equal(hbf, GetPartOfByteArray(13, 21, bytes));
@@ -78,7 +78,7 @@ namespace UnitTest
             byte[] bytes = frame.GetBytes();
             Assert.Equal(21, ConvertFromIncompleteByteArray(GetPartOfByteArray(0, 3, bytes)));
             Assert.Equal(DATA, bytes[3]);
-            Assert.Equal(PADDED, bytes[4]);
+            Assert.Equal(FLAG_PADDED, bytes[4]);
             Assert.Equal(127, ConvertFromIncompleteByteArray(GetPartOfByteArray(5, 9, bytes)));
             Assert.Equal(16, bytes[9]);
             Assert.Equal(data, ConvertFromIncompleteByteArray(GetPartOfByteArray(10, 14, bytes)));
@@ -95,7 +95,7 @@ namespace UnitTest
             bytes = frame.GetBytes();
             Assert.Equal(4, ConvertFromIncompleteByteArray(GetPartOfByteArray(0, 3, bytes)));
             Assert.Equal(DATA, bytes[3]);
-            Assert.Equal(END_STREAM, bytes[4]);
+            Assert.Equal(FLAG_END_STREAM, bytes[4]);
             Assert.Equal(5234, ConvertFromIncompleteByteArray(GetPartOfByteArray(5,9,bytes)));
             Assert.Equal(data, ConvertFromIncompleteByteArray(GetPartOfByteArray(9, 13, bytes)));
 
