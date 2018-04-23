@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,8 +17,7 @@ namespace lib.Streams
         private List<HTTP2Stream> IncomingStreams = new List<HTTP2Stream>();
         private Queue<HTTP2Frame> framesToSend = new Queue<HTTP2Frame>();
         object lockFramesToSend = new object();
-        public HandleClient owner { get; set; }
-        private bool sendFramesThreadAlive = true;
+        HandleClient Client;
 
         public StreamHandler(HandleClient client)
         {
@@ -239,15 +239,28 @@ namespace lib.Streams
         internal async Task RespondWithFirstHTTP2(string url)
         {
             string file;
-            if (url == "")
+            if (url == ""||url.Contains("index.html"))
             {
                 file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\index.html";
+                HTTPRequestHandler.SendFile(this, 1, file);
+                
+                //Server Push simple
+                file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\style.css";
+                if (File.Exists(file))
+                {
+                    HTTPRequestHandler.SendFile(this, streamIdTracker++, file);
+                }
+                file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\script.js";
+                if (File.Exists(file))
+                {
+                    HTTPRequestHandler.SendFile(this, streamIdTracker++, file);
+                }
             }
             else
             {
                 file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\" + url;
+                HTTPRequestHandler.SendFile(this, streamIdTracker++, file);
             }
-            HTTPRequestHandler.SendFile(this, 1, file);
         }
 
         internal void Close()
