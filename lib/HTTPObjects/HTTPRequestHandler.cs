@@ -28,11 +28,10 @@ namespace lib.HTTPObjects
             // Encode a header block fragment into the output buffer
             var headerBlockFragment = new ArraySegment<byte>(commpresedHeaders);
             // komprimering
-            Http2.Hpack.Encoder encoder = new Http2.Hpack.Encoder();
-            Http2.Hpack.Encoder.Result encodeResult = encoder.EncodeInto(headerBlockFragment, headers);
+            var encodeResult = streamHandler.owner.hpackEncoder.EncodeInto(headerBlockFragment, headers);
             //Http2.Hpack.Encoder.Result encodeResult = Server.hPackEncoder.EncodeInto(headerBlockFragment, headers);
             commpresedHeaders = new byte[encodeResult.UsedBytes];
-            Console.WriteLine("Commresed bytes: " + encodeResult.UsedBytes);
+            // pick out the used bytes
             for (int i = 0; i < commpresedHeaders.Length; i++)
             {
                 commpresedHeaders[i] = headerBlockFragment[i];

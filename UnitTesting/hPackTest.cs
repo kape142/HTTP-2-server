@@ -32,9 +32,7 @@ namespace UnitTesting
             
 
             uint maxHeaderFieldsSize = 100;
-
-            Http2.Hpack.DecoderExtensions.DecodeFragmentResult decodeResult = decoder.DecodeHeaderBlockFragment(
-                new ArraySegment<byte>(buffer, 0, buffer.Length), maxHeaderFieldsSize, headers);
+            Http2.Hpack.DecoderExtensions.DecodeFragmentResult decodeResult = decoder.DecodeHeaderBlockFragment(new ArraySegment<byte>(buffer, 0, buffer.Length), maxHeaderFieldsSize, headers);
             foreach (var item in headers)
             {
                 Console.WriteLine(item.Name + " " + item.Value);
