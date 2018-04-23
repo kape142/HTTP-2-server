@@ -384,7 +384,7 @@ namespace lib.HTTPObjects
                     break;
             }
             s.Append(", ");
-            s.Append($"Flag: {this.Flag}, ");
+            s.Append($"Flag: {this.Flag}, End Headers: {FlagEndHeaders} End Stream: {FlagEndStream} Ack: {FlagAck}");
             s.Append($"Length: {this.PayloadLength}, ");
             s.Append($"Stream identifier: {this.StreamIdentifier}");
 

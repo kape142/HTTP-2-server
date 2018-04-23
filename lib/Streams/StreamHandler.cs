@@ -19,7 +19,7 @@ namespace lib.Streams
         object lockFramesToSend = new object();
         internal HandleClient owner; 
         private bool sendFramesThreadAlive = true;
-        int streamIdTracker = 0;
+        int streamIdTracker = 2;
 
         public StreamHandler(HandleClient client)
         {
@@ -247,16 +247,18 @@ namespace lib.Streams
                 HTTPRequestHandler.SendFile(this, 1, file);
                 
                 //Server Push simple
-                // file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\style.css";
-                // if (File.Exists(file))
-                // {
-                //     HTTPRequestHandler.SendFile(this, streamIdTracker++, file);
-                // }
-                // file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\script.js";
-                // if (File.Exists(file))
-                // {
-                //     HTTPRequestHandler.SendFile(this, streamIdTracker++, file);
-                // }
+                file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\style.css";
+                if (File.Exists(file))
+                {
+                    streamIdTracker += 2;
+                    HTTPRequestHandler.SendFile(this, streamIdTracker, file);
+                }
+                file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\script.js";
+                if (File.Exists(file))
+                {
+                    streamIdTracker += 2;
+                    HTTPRequestHandler.SendFile(this, streamIdTracker, file);
+                }
             }
             else
             {
