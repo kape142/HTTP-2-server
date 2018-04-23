@@ -14,7 +14,7 @@ namespace lib.HTTPObjects
         //Frame Types
         public const byte DATA = 0x0;
         public const byte HEADERS = 0x1;
-        public const byte PRIORITY_TYPE = 0x2
+        public const byte PRIORITY_TYPE = 0x2;
         public const byte RST_STREAM = 0x3;
         public const byte SETTINGS = 0x4;
         public const byte PUSH_PROMISE = 0x5;
@@ -32,12 +32,12 @@ namespace lib.HTTPObjects
         public const byte ACK = 0x1;
 
         //Settings Parameters
-        public const short SETTINGS_HEADER_TABLE_SIZE = 0x1;
-        public const short SETTINGS_ENABLE_PUSH = 0x2;
-        public const short SETTINGS_MAX_CONCURRENT_STREAMS = 0x3;
-        public const short SETTINGS_INITIAL_WINDOW_SIZE = 0x4;
-        public const short SETTINGS_MAX_FRAME_SIZE = 0x5;
-        public const short SETTINGS_MAX_HEADER_LIST_SIZE = 0x6;
+        public const ushort SETTINGS_HEADER_TABLE_SIZE = 0x1;
+        public const ushort SETTINGS_ENABLE_PUSH = 0x2;
+        public const ushort SETTINGS_MAX_CONCURRENT_STREAMS = 0x3;
+        public const ushort SETTINGS_INITIAL_WINDOW_SIZE = 0x4;
+        public const ushort SETTINGS_MAX_FRAME_SIZE = 0x5;
+        public const ushort SETTINGS_MAX_HEADER_LIST_SIZE = 0x6;
 
         //Error codes
         public const byte NO_ERROR = 0x0;
