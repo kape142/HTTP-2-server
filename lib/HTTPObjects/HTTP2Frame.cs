@@ -526,10 +526,10 @@ namespace lib.HTTPObjects
             byte headerFlags = frames[0].Flag;
             byte[] headerPayload = frames[0].Payload;
             int i = 0;
-            bool padded = (headerFlags & PADDED) > 0;
+            bool padded = (headerFlags & FLAG_PADDED) > 0;
             if (padded)
                 i++;
-            if ((headerFlags & PRIORITY_FLAG) > 0)
+            if ((headerFlags & FLAG_PRIORITY) > 0)
                 i += 5;
             for(; i < headerPayload.Length-(padded?headerPayload[0]:0); i++)
             {
