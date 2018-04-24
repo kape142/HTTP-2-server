@@ -1,5 +1,4 @@
-﻿
-
-document.addEventListener("DOMContentLoaded", function (event) {
+﻿$(document).ready(function () {
     alert("js lastet");
 });
+

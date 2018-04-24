@@ -24,6 +24,7 @@ namespace lib
         private X509Certificate2 Certificate;
         internal static Dictionary<string, Action<object, object>> registerdActionsOnUrls;
         private List<HandleClient> clients = new List<HandleClient>();
+        // public delegate void delAction<T1, T2>(T1 req, out T2 res);
 
 
         /*
@@ -46,9 +47,6 @@ namespace lib
             IpAddress = ipAddress;
             Certificate = certificate;
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-            // Thread t = new Thread(Clean);
-            // t.Start();
-
         }
 
 
@@ -86,20 +84,20 @@ namespace lib
             }
         }
 
-        public void Get(string url, Action<HTTP1Request, Response> action)
-        {
-            Get(url, action);
-        }
-
-        public void Get(string url, Action<byte[], byte[]> action)
-        {
-            Get(url, action);
-        }
-
-        public void Get(string url, Action<object, object> action)
-        {
-            registerdActionsOnUrls.Add("GET" + url, action);
-        }
+        //public void Get(string url, Action<HTTP1Request, Response> action)
+        //{
+        //    Get(url, action);
+        //}
+        //
+        //public void Get(string url, delAction<byte[], byte[]> action)
+        //{
+        //    Get(url, action);
+        //}
+        //
+        //public void Get(string url, delAction<object, object> action)
+        //{
+        //    registerdActionsOnUrls.Add("GET" + url, action);
+        //}
 
         //private void Clean()
         //{

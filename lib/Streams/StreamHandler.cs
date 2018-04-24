@@ -130,6 +130,18 @@ namespace lib.Streams
             return IncomingStreams.Exists(x => x.Id == streamId);
         }
 
+        private void CloseStream(int streamId)
+        {
+            OutgoingStreams.FindAll(x => x.Id == streamId).ForEach( y => y.State = StreamState.Closed);
+            IncomingStreams.FindAll(x => x.Id == streamId).ForEach( y => y.State = StreamState.Closed);
+            lock (lockFramesToSend)
+            {
+                var frames = new List<HTTP2Frame>(framesToSend.ToArray());
+                frames.RemoveAll(x => x.StreamIdentifier == streamId);
+                framesToSend = new Queue<HTTP2Frame>(frames.ToArray());
+            }
+        }
+
         internal HTTP2Stream GetIncommingStreams(int streamId)
         {
             return IncomingStreams.Find(x => x.Id == streamId);
@@ -141,9 +153,16 @@ namespace lib.Streams
             {
                 case HTTP2Frame.DATA:
                     Console.WriteLine("DATA frame recived\n" + frame.ToString());
+                    if(frame.StreamIdentifier == 0)
+                    {
+                        // todo svar med protocol error
+                    }
+                    DataPayload dp = frame.GetDataPayloadDecoded();
+                    if (dp.Data != null) Console.WriteLine(Convert.ToBase64String(dp.Data));
                     break;
                 case HTTP2Frame.HEADERS:
                     Console.WriteLine("HEADERS frame recived\n" + frame.ToString());
+
                     GetIncommingStreams(frame.StreamIdentifier).Frames.Add(frame);
                     if (frame.FlagEndHeaders)
                     {
@@ -157,6 +176,9 @@ namespace lib.Streams
                     break;
                 case HTTP2Frame.RST_STREAM:
                     Console.WriteLine("RST_STREAM frame recived\n" + frame.ToString());
+                    RSTStreamPayload rst = frame.GetRSTStreamPayloadDecoded();
+                    Console.WriteLine($"Error code: {rst.ErrorCode} on stream: {frame.StreamIdentifier}");
+                    CloseStream(frame.StreamIdentifier);
                     break;
                 case HTTP2Frame.SETTINGS:
                     Console.WriteLine("SETTINGS frame recived\n" + frame.ToString());
@@ -173,11 +195,16 @@ namespace lib.Streams
                     break;
                 case HTTP2Frame.PING:
                     Console.WriteLine("PING frame recived\n" + frame.ToString());
+                    if (!frame.FlagAck)
+                    {
+                        SendFrame(new HTTP2Frame(frame.StreamIdentifier).AddPingPayload(frame.Payload));
+                    }
                     break;
                 case HTTP2Frame.GOAWAY:
                     Console.WriteLine("GOAWAY frame recived\n" + frame.ToString());
                     GoAwayPayload gp = frame.GetGoAwayPayloadDecoded();
                     Console.WriteLine(gp.ToString());
+                    owner.Close();
                     break;
                 case HTTP2Frame.WINDOW_UPDATE:
                     Console.WriteLine("WINDOW_UPDATE frame recived\n" + frame.ToString());
@@ -225,18 +252,17 @@ namespace lib.Streams
             string method = lstheaders.Find(x => x.Name == ":method").Value;
             string path = lstheaders.Find(x => x.Name == ":path").Value;
 
-            if (Server.registerdActionsOnUrls.ContainsKey("/" + path))
+            if (Server.registerdActionsOnUrls.ContainsKey(method+path))
             {
+                Action<byte[], byte[]> action = Server.registerdActionsOnUrls[method + path];
+                HTTP2Frame request = new HTTP2Frame(streamID);
+                byte[] bytearrayresponse = new byte[0];
+
                 switch (method)
                 {
                     case "GET":
-                        Action<byte[], byte[]> a = Server.registerdActionsOnUrls["GET/" + path];
-                        HTTP2Frame request = new HTTP2Frame(streamID);
-                        byte[] res = new byte[0];
-                        a(request.Payload, res);
-                        HTTPRequestHandler.SendOk(this, streamID, false);
-                        HTTP2Frame getdataresponse = new HTTP2Frame(streamID).AddDataPayload(res, 0, true); // tood støtte for større data en rammen
-                        SendFrame(getdataresponse);
+                        action(request.Payload, bytearrayresponse);
+                        HTTPRequestHandler.SendData(this, streamID, bytearrayresponse, "text/html");
                         break;
                     case "POST":
                         HTTPRequestHandler.SendMethodNotAllowed(this, streamID);

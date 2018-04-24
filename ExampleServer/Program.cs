@@ -14,20 +14,20 @@ namespace ExampleServer
             //lib.HandleClient.test();
             var serverCertificate = new X509Certificate2("Certificate/TcpTLSServer_TemporaryKey.pfx", "1234");
             //Server server = new Server("10.22.190.99", null);
-            Server server = new Server("10.22.190.99", serverCertificate); // serverCertificate);
+            Server server = new Server("10.0.0.142", serverCertificate); // serverCertificate);
 
             
-            
+            /*
             server.Get("/testurl", (req, res) =>
             {
                 Console.WriteLine("testurl virker");
                 byte[] mottat = (byte[])req;
-                char[] b = new char[2];
-                b[0] = 'H';
-                b[1] = 'E';
-                res = b;
+                byte[] b = new byte[2];
+                b[0] = (byte)'H';
+                b[1] = (byte)'E';
+                res = (byte[])b;
             });
-
+            */
             server.Listen(443);
 
             /*
