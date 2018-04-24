@@ -25,13 +25,13 @@ namespace lib.HTTPObjects
             FileStream fs = fi.OpenRead();
             BinaryReader reader = new BinaryReader(fs);
             long length = fs.Length;
-            byte[] d = new byte[HTTP2Frame.SETTINGS_MAX_FRAME_SIZE];
-            for (long i = 0; i < length; i += HTTP2Frame.SETTINGS_MAX_FRAME_SIZE)
+            byte[] d = new byte[HTTP2Frame.MaxFrameSize];
+            for (long i = 0; i < length; i += HTTP2Frame.MaxFrameSize)
             {
-                reader.Read(d, HTTP2Frame.SETTINGS_MAX_FRAME_SIZE, (int)i);
+                reader.Read(d, HTTP2Frame.MaxFrameSize, (int)i);
                 //stream.addFrame(new HTTP2Frame((int)stream.Id).AddDataPayload(d));
             }
-            int rest = (int)length % HTTP2Frame.SETTINGS_MAX_FRAME_SIZE;
+            int rest = (int)length % HTTP2Frame.MaxFrameSize;
             reader.Read(d, (int)length - rest, rest);
         }
     }

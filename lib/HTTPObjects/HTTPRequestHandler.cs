@@ -23,7 +23,7 @@ namespace lib.HTTPObjects
                 new HeaderField{ Name = ":status", Value ="200", Sensitive = false },
                 new HeaderField{ Name = "content-type", Value = Mapping.MIME_MAP[fi.Extension], Sensitive = false },
             };
-            byte[] commpresedHeaders = new byte[HTTP2Frame.SETTINGS_MAX_FRAME_SIZE];
+            byte[] commpresedHeaders = new byte[HTTP2Frame.MaxFrameSize];
             // Encode a header block fragment into the output buffer
             var headerBlockFragment = new ArraySegment<byte>(commpresedHeaders);
             // komprimering
@@ -44,13 +44,13 @@ namespace lib.HTTPObjects
             using (BinaryReader reader = new BinaryReader(fs))
             {
                 long length = fs.Length;
-                byte[] d = new byte[HTTP2Frame.SETTINGS_MAX_FRAME_SIZE];
-                for(long i = 0;  i<length-HTTP2Frame.SETTINGS_MAX_FRAME_SIZE; i+= HTTP2Frame.SETTINGS_MAX_FRAME_SIZE)
+                byte[] d = new byte[HTTP2Frame.MaxFrameSize];
+                for(long i = 0;  i<length-HTTP2Frame.MaxFrameSize; i+= HTTP2Frame.MaxFrameSize)
                 {
-                    reader.Read(d, 0, HTTP2Frame.SETTINGS_MAX_FRAME_SIZE);
+                    reader.Read(d, 0, HTTP2Frame.MaxFrameSize);
                     streamHandler.SendFrame(new HTTP2Frame((int) streamId).AddDataPayload(d));
                 }
-                int rest = (int) length % HTTP2Frame.SETTINGS_MAX_FRAME_SIZE;
+                int rest = (int) length % HTTP2Frame.MaxFrameSize;
                 if(rest > 0)
                 {
                     reader.Read(d, 0, rest);
@@ -64,7 +64,7 @@ namespace lib.HTTPObjects
             List<HeaderField> headers =  new List<HeaderField>(){
                 new HeaderField{ Name = ":status", Value ="404", Sensitive = false }
             };
-            byte[] commpresedHeaders = new byte[HTTP2Frame.SETTINGS_MAX_FRAME_SIZE];
+            byte[] commpresedHeaders = new byte[HTTP2Frame.MaxFrameSize];
             // Encode a header block fragment into the output buffer
             var headerBlockFragment = new ArraySegment<byte>(commpresedHeaders);
             // komprimering

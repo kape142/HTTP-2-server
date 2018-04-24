@@ -110,7 +110,7 @@ namespace lib
                 Console.WriteLine(Convert.ToString(b, 2).PadLeft(8, '0'));
 
             /*Console.WriteLine(fc.ToString());
-            fc.AddSettingsPayload(new Tuple<short, int>[] {new Tuple<short,int>(HTTP2Frame.SETTINGS_MAX_FRAME_SIZE,128) });
+            fc.AddSettingsPayload(new Tuple<short, int>[] {new Tuple<short,int>(HTTP2Frame.MaxFrameSize,128) });
             var by = fc.GetBytes();
             foreach (byte b in by)
                 Console.Write($"{b} ");

@@ -161,19 +161,46 @@ namespace UnitTest
         }
 
         [Fact]
+        public void TestConvertToBytes()
+        {
+            int i = 19;
+            var b = BitConverter.GetBytes(i);
+            Array.Reverse(b);
+            Assert.Equal(b, ConvertToByteArray(i));
+        }
+
+        [Fact]
+        public void TestCombineHeaderPayloads()
+        {
+            byte[] headerData = new byte[16384];
+            new Random().NextBytes(headerData);
+            byte[] continuationData = new byte[37];
+            new Random().NextBytes(continuationData);
+            var header = new HTTP2Frame(28).AddHeaderPayload(headerData);
+            var continuation = new HTTP2Frame(28).AddContinuationFrame(continuationData, true);
+            var total = CombineHeaderPayloads(header, continuation);
+            Assert.Equal(CombineByteArrays(headerData, continuationData),total);
+        }
+
+        [Fact]
         public void TestPriorityPayload()
         {
-            HTTP2Frame frame = new HTTP2Frame(1).AddPriorityPayload(true, 3, 10);
-            PriorityPayload pp = frame.GetPriorityPayloadDecoded();
-            Assert.True(pp.StreamDependencyIsExclusive);
-            Assert.True(pp.StreamDependency == 3);
-            Assert.True(pp.Weight == 10);
+            var frame = new HTTP2Frame(22);
+            int sid = 91374234;
+            frame.AddPriorityPayload(true, sid, 28);
+            byte[] bytes = frame.GetBytes();
+            Assert.Equal(5, ConvertFromIncompleteByteArray(GetPartOfByteArray(0, 3, bytes)));
+            Assert.Equal(PRIORITY_TYPE, bytes[3]);
+            Assert.Equal(NO_FLAG, bytes[4]);
+            Assert.Equal(22, bytes[8]);
+            Assert.Equal(sid, Split32BitToBoolAnd31bitInt(ConvertFromIncompleteByteArray(GetPartOfByteArray(9, 13, bytes))).int31);
+            Assert.True(Split32BitToBoolAnd31bitInt(ConvertFromIncompleteByteArray(GetPartOfByteArray(9, 13, bytes))).bit32);
+            Assert.Equal(28, bytes[13]);
 
-            frame = new HTTP2Frame(1).AddPriorityPayload(false, 4);
-            pp = frame.GetPriorityPayloadDecoded();
-            Assert.False(pp.StreamDependencyIsExclusive);
-            Assert.True(pp.StreamDependency == 4);
-            Assert.True(pp.Weight == 0);
+            PriorityPayload pp = frame.GetPriorityPayloadDecoded();
+            Assert.Equal(sid, pp.StreamDependency);
+            Assert.True(pp.StreamDependencyIsExclusive);
+            Assert.Equal(28, pp.Weight);
         }
 
         [Fact]
