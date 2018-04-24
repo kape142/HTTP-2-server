@@ -162,7 +162,6 @@ namespace lib.Streams
                     break;
                 case HTTP2Frame.HEADERS:
                     Console.WriteLine("HEADERS frame recived\n" + frame.ToString());
-
                     GetIncommingStreams(frame.StreamIdentifier).Frames.Add(frame);
                     if (frame.FlagEndHeaders)
                     {
@@ -188,6 +187,8 @@ namespace lib.Streams
                         break;
                     }
                     if (frame.FlagAck) break;
+                    SettingsPayload sp = frame.GetSettingsPayloadDecoded();
+                    Console.WriteLine(sp.ToString());
                     SendFrame(new HTTP2Frame(0).AddSettingsPayload(new (ushort, uint)[0], true));
                     break;
                 case HTTP2Frame.PUSH_PROMISE:
@@ -284,6 +285,14 @@ namespace lib.Streams
                 file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\" + path;
             }
             HTTPRequestHandler.SendFile(this, streamID, file);
+            if (file.Contains("index.html"))
+            {
+                Console.WriteLine("Push promise <<<<<<<<<<<<<<<<<<<");
+                HTTPRequestHandler.SendFileWithPushPromise(this, owner.NextStreamId, Environment.CurrentDirectory + "\\" + Server.DIR + "\\about.html");
+                HTTPRequestHandler.SendFileWithPushPromise(this, owner.NextStreamId, Environment.CurrentDirectory + "\\" + Server.DIR + "\\Capture.jpg");
+                HTTPRequestHandler.SendFileWithPushPromise(this, owner.NextStreamId, Environment.CurrentDirectory + "\\" + Server.DIR + "\\Capture2.jpg");
+                Console.WriteLine("Push promise >>>>>>>>>>>>>>>>>>>>");
+            }
 
         }
 

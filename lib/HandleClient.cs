@@ -17,6 +17,14 @@ namespace lib
     public class HandleClient
     {
         private static int nrOfClientsMade = 0;
+        private int currentStreamIdPromise = 33;
+        public int NextStreamId {
+            get
+            {
+                currentStreamIdPromise += currentStreamIdPromise + 2;
+                return currentStreamIdPromise; // todo thred safe?
+            }
+        }
         TcpClient tcpClient;
         SslStream sslStream;
         StreamReader streamReader;

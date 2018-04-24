@@ -41,6 +41,7 @@ namespace lib
         }
         */
 
+
         public Server(string ipAddress, X509Certificate2 certificate = null)
         {
             registerdActionsOnUrls = new Dictionary<string, Action<object, object>>();
@@ -83,6 +84,16 @@ namespace lib
 
             }
         }
+
+        //private void Get(string url, Action<object, object> action)
+        //{
+        //    registerdActionsOnUrls.Add("GET" + url, action);
+        //}
+        //
+        //public void Get(string url, Action<byte[], byte[]> action)
+        //{
+        //    registerdActionsOnUrls.Add("GET" + url, action);
+        //}
 
         //public void Get(string url, Action<HTTP1Request, Response> action)
         //{
