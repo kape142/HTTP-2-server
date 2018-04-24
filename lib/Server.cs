@@ -19,6 +19,7 @@ namespace lib
         internal const string SERVER = "prosjekthttp2";
         internal const string DIR = "WebApp";
         internal const int MAX_HTTP2_FRAME_SIZE = 16384;
+
         private string IpAddress;
         internal static int Port { get; private set; }
         private X509Certificate2 Certificate;
@@ -88,7 +89,8 @@ namespace lib
 
         public void Get(string url, Action<HTTP1Request, Response> action)
         {
-            registerdActionsOnUrls.Add(url, action);
+            //registerdActionsOnUrls.Add(url, action);
+            RestURI.RestLibrary.AddURI("GET", url, null);
         }
 
         //private void Clean()
@@ -116,6 +118,12 @@ namespace lib
                 Console.Write($"{b} ");
             Console.WriteLine();
             Console.WriteLine(fc.ToString());*/
+        }
+
+        public static void testRestURI()
+        {
+            RestURI.RestLibrary.AddURI("GET", "shoppinglists/favourite/:householdid/:username/:shoppinglistid", (a, b) => Console.Write("1"));
+            RestURI.RestLibrary.AddURI("GET", "shoppinglists/favourite/:householdid/", (a, b) => Console.Write("2"));
         }
     }
 }

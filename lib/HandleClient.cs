@@ -219,21 +219,12 @@ namespace lib
 
             if (numberOfBytesRead == 3) // myReadBuffer != null && myReadBuffer.Length == 3 && myReadBuffer[0] != 0 && myReadBuffer[1] != 0 && myReadBuffer[2] != 0)
             {
-                bool littleEndian = BitConverter.IsLittleEndian;
-                byte[] source = myReadBuffer;
-                byte[] target = new byte[4];
-                for (int i = 0; i < 3; i++)
-                {
-                    int j = littleEndian ? 0 : 3;
-                    target[j] = source[i];
-                    j += littleEndian ? 1 : -1;
-                }
-                int length = BitConverter.ToInt32(target, 0) + 9;
-                //Console.WriteLine("Lengt of recived frame: " + length);
+                int length = Bytes.ConvertFromIncompleteByteArray(myReadBuffer) + 9;
+                //Console.WriteLine("Length of recived frame: " + length);
                 byte[] data = new byte[length];
-                data[0] = source[0];
-                data[1] = source[1];
-                data[2] = source[2];
+                data[0] = myReadBuffer[0];
+                data[1] = myReadBuffer[1];
+                data[2] = myReadBuffer[2];
                 lock (binaryreaderlock)
                 {
                     binaryReader.Read(data, 3, length - 3);
