@@ -1,5 +1,7 @@
 ﻿using System;
 using System.IO;
+using System.Net;
+using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using lib;
@@ -9,12 +11,27 @@ namespace ExampleServer
 {
     class Program
     {
+
+        //Get local ipadress (so that we dont have to update all the time)
+        public static string GetLocalIPAddress()
+        {
+            var host = Dns.GetHostEntry(Dns.GetHostName());
+            foreach (var ip in host.AddressList)
+            {
+                if (ip.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    return ip.ToString();
+                }
+            }
+            throw new Exception("No network adapters with an IPv4 address in the system!");
+        }
+
         static void Main(string[] args)
         {
             //lib.HandleClient.test();
             var serverCertificate = new X509Certificate2("Certificate/TcpTLSServer_TemporaryKey.pfx", "1234");
             //Server server = new Server("10.22.190.99", null);
-            Server server = new Server("10.24.91.159", serverCertificate); // serverCertificate);
+            Server server = new Server(GetLocalIPAddress(), serverCertificate); // serverCertificate);
 
             /*
             server.Get("/testurl", (req, res) =>
@@ -26,7 +43,7 @@ namespace ExampleServer
                 b[1] = 'E';
                 res = b;
             });
-
+            */
             server.Listen(443);
 
             /*
