@@ -225,6 +225,29 @@ namespace lib.Streams
             string method = lstheaders.Find(x => x.Name == ":method").Value;
             string path = lstheaders.Find(x => x.Name == ":path").Value;
 
+            if (Server.registerdActionsOnUrls.ContainsKey("/" + path))
+            {
+                switch (method)
+                {
+                    case "GET":
+                        Action<byte[], byte[]> a = Server.registerdActionsOnUrls["GET/" + path];
+                        HTTP2Frame request = new HTTP2Frame(streamID);
+                        byte[] res = new byte[0];
+                        a(request.Payload, res);
+                        HTTPRequestHandler.SendOk(this, streamID, false);
+                        HTTP2Frame getdataresponse = new HTTP2Frame(streamID).AddDataPayload(res, 0, true); // tood støtte for større data en rammen
+                        SendFrame(getdataresponse);
+                        break;
+                    case "POST":
+                        HTTPRequestHandler.SendMethodNotAllowed(this, streamID);
+                        break;
+                    default:
+                        HTTPRequestHandler.SendMethodNotAllowed(this, streamID);
+                        break;
+                }
+                return;
+            }
+
             string file;
             if (path is null || path == "" || path == "/")
             {

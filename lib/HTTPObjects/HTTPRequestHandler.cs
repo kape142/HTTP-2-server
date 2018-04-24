@@ -11,6 +11,10 @@ namespace lib.HTTPObjects
 {
     internal class HTTPRequestHandler
     {
+        public static readonly HeaderField HEADER_OK = new HeaderField{Name = ":status", Value = "200", Sensitive = false };
+        public static readonly HeaderField HEADER_NOTFOUND = new HeaderField{Name = ":status", Value = "404", Sensitive = false };
+        public static readonly HeaderField HEADER_METHODNOTALLOWED = new HeaderField{Name = ":status", Value = "405", Sensitive = false };
+
         public static void SendFile(StreamHandler streamHandler, int streamId, string url)
         {
             FileInfo fi = new FileInfo(url);
@@ -20,7 +24,7 @@ namespace lib.HTTPObjects
                 return;
             }
             List<HeaderField> headers = new List<HeaderField>(){
-                new HeaderField{ Name = ":status", Value ="200", Sensitive = false },
+                HEADER_OK,
                 new HeaderField{ Name = "content-type", Value = Mapping.MIME_MAP[fi.Extension], Sensitive = false },
             };
             byte[] commpresedHeaders = new byte[HTTP2Frame.SETTINGS_MAX_FRAME_SIZE];
@@ -61,9 +65,24 @@ namespace lib.HTTPObjects
 
         private static void SendNotFound(StreamHandler streamHandler, int streamId)
         {
-            List<HeaderField> headers =  new List<HeaderField>(){
-                new HeaderField{ Name = ":status", Value ="404", Sensitive = false }
-            };
+            List<HeaderField> headers = new List<HeaderField>(){ HEADER_NOTFOUND };
+            SendHeader(streamHandler, streamId, headers);
+        }
+
+        public static void SendMethodNotAllowed(StreamHandler streamHandler, int streamId)
+        {
+            List<HeaderField> headers = new List<HeaderField>() { HEADER_METHODNOTALLOWED };
+            SendHeader(streamHandler, streamId, headers);
+        }
+
+        public static void SendOk(StreamHandler streamHandler, int streamId, bool endStream)
+        {
+            List<HeaderField> headers = new List<HeaderField>() { HEADER_OK};
+            SendHeader(streamHandler, streamId, headers, true, endStream);
+        }
+
+        private static void SendHeader(StreamHandler streamHandler, int streamId, List<HeaderField> headers, bool endheaders = true, bool endStream = true)
+        {
             byte[] commpresedHeaders = new byte[HTTP2Frame.SETTINGS_MAX_FRAME_SIZE];
             // Encode a header block fragment into the output buffer
             var headerBlockFragment = new ArraySegment<byte>(commpresedHeaders);
@@ -77,8 +96,11 @@ namespace lib.HTTPObjects
                 commpresedHeaders[i] = headerBlockFragment[i];
             }
 
-            HTTP2Frame headerframe = new HTTP2Frame(streamId).AddHeaderPayload(commpresedHeaders, 0, true, true);
-            streamHandler.SendFrame(headerframe);
+            HTTP2Frame headerframe = new HTTP2Frame(streamId).AddHeaderPayload(commpresedHeaders, 0, endheaders, endheaders);
+            streamHandler.SendFrame(headerframe); // todo støtte for datautvidelse med contuation rammer
         }
+
+
+
     }
 }
