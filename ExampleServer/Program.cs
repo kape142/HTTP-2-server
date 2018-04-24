@@ -20,12 +20,13 @@ namespace ExampleServer
             server.Get("/testurl", (req, res) =>
             {
                 Console.WriteLine("testurl virker");
+                byte[] mottat = (byte[])req;
                 char[] b = new char[2];
                 b[0] = 'H';
                 b[1] = 'E';
-                res.Send(b);
+                res = b;
             });
-            */
+
             server.Listen(443);
 
             /*
