@@ -24,14 +24,16 @@ namespace lib.HTTPObjects
                 SendNotFound(streamHandler, streamId);
                 return;
             }
-
             List<HeaderField> headers = new List<HeaderField>(){
                 HEADER_OK,
                 new HeaderField{ Name = "content-type", Value = Mapping.MimeMap[fi.Extension], Sensitive = false },
-                //new HeaderField{ Name = "Content-Encoding", Value = "gzip", Sensitive = false },
             };
-            //FileInfo compr = fi = ZipStream.Compress(fi);
-            byte[] commpresedHeaders = new byte[Server.MAX_HTTP2_FRAME_SIZE];
+            fi = ZipStream.Compress(fi);
+            if (fi.Extension.Equals(".gz"))
+            {
+                headers.Add(new HeaderField { Name = "Content-Encoding", Value = "gzip", Sensitive = false });
+            }
+            byte[] commpresedHeaders = new byte[HTTP2Frame.SETTINGS_MAX_FRAME_SIZE];
             // Encode a header block fragment into the output buffer
             var headerBlockFragment = new ArraySegment<byte>(commpresedHeaders);
             // komprimering
