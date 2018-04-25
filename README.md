@@ -90,7 +90,7 @@ All.
 ## Built With
 
 * [Dropwizard](http://www.dropwizard.io/1.0.2/docs/) - The web framework used
-* [uGet](https://nuget.org/) - Dependency Management
+* [NuGet](https://nuget.org/) - Dependency Management
 
 ## Versioning
 
