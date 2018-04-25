@@ -322,6 +322,22 @@ namespace lib.Streams
             {
                 file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\" + url;
                 HTTPRequestHandler.SendFile(this, streamIdTracker++, file);
+
+                //Server Push simple
+                url.Replace("html","js");
+                file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\"+url;
+                if (File.Exists(file))
+                {
+                    streamIdTracker += 2;
+                    HTTPRequestHandler.SendFile(this, streamIdTracker, file);
+                }
+                url.Replace("js", "css");
+                file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\" + url;
+                if (File.Exists(file))
+                {
+                    streamIdTracker += 2;
+                    HTTPRequestHandler.SendFile(this, streamIdTracker, file);
+                }
             }
         }
 
