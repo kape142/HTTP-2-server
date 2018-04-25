@@ -60,11 +60,34 @@ Add additional notes about how to deploy this on a live system
 
 
 ## Implementations
-
+### Establshing a connection over HTTP/2
 * Starting HTTP/2 for "http" URIs, ref [RFC7540 Section 3.2](https://tools.ietf.org/html/rfc7540#section-3.2)
 * Starting HTTP/2 for "https" URIs, ref [RFC7540 Section 3.3](https://tools.ietf.org/html/rfc7540#section-3.3)
 * HTTP/2 Connection Preface, ref [RFC7540 Section 3.5](https://tools.ietf.org/html/rfc7540#section-3.5)
-* 
+
+### Frames
+* Frame format (Encoding and Decoding), ref [RFC7540 Section 4.1](https://tools.ietf.org/html/rfc7540#section-4.1)
+* Header Compression and Decompression (from NuGet), ref [RFC7540 Section 4.3](https://tools.ietf.org/html/rfc7540#section-4.3)
+#### Frame Definitions [RFC7540 Section 6](https://tools.ietf.org/html/rfc7540#section-6)
+All.
+
+### Multiplexing and Streams
+
+* Stream Identifiers, ref [RFC7540 Section 5.1.1](https://tools.ietf.org/html/rfc7540#section-5.1.1)
+* Stream Concurrency, ref [RFC7540 Section 5.1.2](https://tools.ietf.org/html/rfc7540#section-5.1.2)
+* Stream Dependencies, ref [RFC7540 Section 5.3.1](https://tools.ietf.org/html/rfc7540#section-5.3.1)
+
+### HTTP Message Exchange
+* Server Push [RFC7540 Section 8.2](https://tools.ietf.org/html/rfc7540#section-8.2)
+
+## Limitations and further development
+
+* Further implementations of Stream states, and dependency weighting.
+* Error handeling
+* Work out why some browsers cooperate with our example server better than others.
+* Cleanup classes
+* Implement continous integration for project.
+* Further work on flowcontroll and recieving data from client.
 
 
 ## Built With
