@@ -238,7 +238,7 @@ namespace lib.Streams
             var headerBlockFragment = new ArraySegment<byte>(headerAndContinuationPayloades);
             byte[] decompressedHeaders = new byte[HTTP2Frame.SETTINGS_MAX_FRAME_SIZE];
             List<HeaderField> lstheaders = new List<HeaderField>();
-            var dencodeResult = owner.hpackDecoder.DecodeHeaderBlockFragment(headerBlockFragment, (uint)HTTP2Frame.SETTINGS_MAX_FRAME_SIZE, lstheaders); // todo max header size
+            var dencodeResult = owner.hpackDecoder.DecodeHeaderBlockFragment(headerBlockFragment, (uint)HTTP2Frame.MaxFrameSize, lstheaders); // todo max header size
             foreach (var item in lstheaders)
             {
                 Console.WriteLine(item.Name + " " + item.Value);
