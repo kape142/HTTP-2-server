@@ -11,12 +11,7 @@ namespace lib
     public class Server
     {
         internal const int HTTPS_PORT = 443;
-        internal const string HTTP1V = "HTTP/1.1";
-        internal const string SWITCHING_PROTOCOLS = "101 Switching Protocols";
-        internal const string OK = "200 OK";
-        internal const string NO_CONTENT = "204 No Content";
-        internal const string ERROR = "400 Bad Request";
-        internal const string SERVER = "prosjekthttp2";
+        
         internal const string DIR = "WebApp";
         internal const int MAX_HTTP2_FRAME_SIZE = 16384;
         private string IpAddress;

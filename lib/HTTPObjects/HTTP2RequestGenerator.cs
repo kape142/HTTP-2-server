@@ -9,7 +9,7 @@ using Http2.Hpack;
 [assembly:InternalsVisibleTo("UnitTesting")]
 namespace lib.HTTPObjects
 {
-    internal class HTTPRequestHandler
+    internal class HTTP2RequestGenerator
     {
         public static readonly HeaderField HEADER_OK = new HeaderField{Name = ":status", Value = "200", Sensitive = false };
         public static readonly HeaderField HEADER_NOTFOUND = new HeaderField{Name = ":status", Value = "404", Sensitive = false };
@@ -77,7 +77,7 @@ namespace lib.HTTPObjects
             }
             List<HeaderField> headers = new List<HeaderField>(){
                 HEADER_OK,
-                new HeaderField{ Name = "content-type", Value = Mapping.MIME_MAP[fi.Extension], Sensitive = false },
+                new HeaderField{ Name = "content-type", Value = Mapping.MimeMap[fi.Extension], Sensitive = false },
             };
             byte[] commpresedHeaders = new byte[HTTP2Frame.SETTINGS_MAX_FRAME_SIZE];
             // Encode a header block fragment into the output buffer

@@ -6,7 +6,8 @@ namespace lib
 {
     public class Mapping
     {
-        public static IDictionary<string, string> MIME_MAP = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase) {
+        // source: https://gist.github.com/aksakalli/9191056
+        public static IDictionary<string, string> MimeMap = new Dictionary<string, string>(StringComparer.InvariantCultureIgnoreCase) {
 
         #region Big freaking list of mime types
 
