@@ -32,7 +32,17 @@ namespace ExampleServer
             //Server server = new Server("10.22.190.99", null);
             Server server = new Server(GetLocalIPAddress(), serverCertificate); // serverCertificate);
 
-            
+            /*
+            server.Get("testurl/test", (req, res) => {
+                Console.WriteLine("GET TEST URLVIRKER");
+                res.Send("sendt fra test url");
+            });
+
+            server.Post("testurl/test", (req, res) => {
+                Console.WriteLine("POST TEST URLVIRKER");
+                res.Send("sendt fra test url");
+            });
+            */
             /*
             server.Get("/testurl", (req, res) =>
             {

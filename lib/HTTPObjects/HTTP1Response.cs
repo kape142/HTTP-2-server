@@ -59,12 +59,9 @@ namespace lib
                     {
                         return DoUppgrade(req);
                     }
-                    if (Server.registerdActionsOnUrls.ContainsKey("/" + req.HttpUrl))
+                    if (false)//todo
                     {
-                        Action<HTTP1Request, HTTP1Response> a = Server.registerdActionsOnUrls["/"+ req.HttpUrl];
-                        HTTP1Response res = new HTTP1Response(req.Httpv, RESPONSE_OK, null, null);
-                        a(req, res);
-                        return res;
+                        return null;
                     }
                     switch (req.Type)
                     {

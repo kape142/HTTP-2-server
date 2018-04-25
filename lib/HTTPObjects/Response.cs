@@ -1,15 +1,30 @@
-﻿using System;
+﻿using lib.Streams;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace lib.HTTPObjects
 {
-    class Response
+    public class Response
     {
+        private StreamHandler _streamHandler;
+        private int _streamId;
+        internal Response(StreamHandler streamHandler, int streamId)
+        {
+            _streamHandler = streamHandler;
+            _streamId = streamId;
+        }
+
         public void Send(string data)
         {
-            HTTP2Frame frame = new HTTP2Frame(-1).AddDataPayload(Convert.FromBase64String(data));
-            throw new NotImplementedException("jone du må fikse dette");
+            Send(Encoding.ASCII.GetBytes(data), "text/plain");
         }
+
+        private void Send(byte[] data, string contentType)
+        {
+            HTTP2RequestGenerator.SendData(_streamHandler, _streamId, data, contentType);
+        }
+
+        
     }
 }

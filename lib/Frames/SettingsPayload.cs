@@ -14,9 +14,9 @@ namespace lib.Frames
             string ret = "Settings:\n";
             foreach (var item in Settings)
             {
-                ret += GetSettingsName(item.identifier) + item.value + "\n";
+                ret += GetSettingsName(item.identifier) + " " + item.value + "\n";
             }
-            return base.ToString();
+            return ret;
         }
 
         private string GetSettingsName(int nr)

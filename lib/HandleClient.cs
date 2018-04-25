@@ -17,7 +17,7 @@ namespace lib
     public class HandleClient
     {
         private static int _nrOfClientsMade = 0;
-        private int _currentStreamIdPromise = 33;
+        private int _currentStreamIdPromise = 0;
         private object _streamreaderlock = new object();
         private TcpClient _tcpClient;
         private SslStream _sslStream;
@@ -130,13 +130,8 @@ namespace lib
         {
             try
             {
-                Console.WriteLine("Sender ramme: ");
+                Console.WriteLine("Send frame: ");
                 Console.WriteLine(frame.ToString());
-                //lock (binaryWriter)
-                //{
-                //    binaryWriter.Flush();
-                //    binaryWriter.Write(frame.GetBytes(), 0, frame.GetBytes().Length);
-                //}
                 if (_useSsl)
                 {
                     await _sslWriter.FlushAsync();

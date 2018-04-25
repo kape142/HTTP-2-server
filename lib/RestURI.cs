@@ -5,10 +5,10 @@ using lib.HTTPObjects;
 
 namespace lib
 {
-    internal class RestURI
+    public class RestURI
     {
         public static RestURI RestLibrary { get; } = new RestURI("");
-        internal delegate void HTTPMethod(Request req, Response res);
+        public delegate void HTTPMethod(Request req, Response res);
         internal String URI { get; }
         private Dictionary<String, RestURI> SubURIs = new Dictionary<string, RestURI>();
         private Dictionary<String, HTTPMethod> Methods = new Dictionary<string, HTTPMethod>();
@@ -28,8 +28,8 @@ namespace lib
                 PathParam.AddURI(method, NextPath(URI), callback);
                 return;
             }
-            if (path.Length > 1)
-            {
+            //if (path.Length > 1)
+            //{
                 if (SubURIs.ContainsKey(path[1]))
                 {
                     RestURI subURI = SubURIs[path[1]];
@@ -42,7 +42,7 @@ namespace lib
                     SubURIs.Add(path[1], subURI);
                 }
                 return;
-            }
+            //}
             throw new Exception("­I­ ­d­o­n­'­­­­­­t­­ ­­­t­­­h­­­i­­­n­­­k­­­­ ­­­t­­­h­­­i­­­s­­­ ­­­s­­­h­­­o­u­l­d­ ­­­h­­­­­a­p­­­­­­­­­­­­­­­­­­­p­e­n­­­­­­?­?­");  
         }
 

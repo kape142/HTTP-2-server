@@ -186,9 +186,9 @@ namespace lib.Streams
                         // send protocol error
                         break;
                     }
-                    if (frame.FlagAck) break;
                     SettingsPayload sp = frame.GetSettingsPayloadDecoded();
                     Console.WriteLine(sp.ToString());
+                    if (frame.FlagAck) break;
                     SendFrame(new HTTP2Frame(0).AddSettingsPayload(new (ushort, uint)[0], true));
                     break;
                 case HTTP2Frame.PUSH_PROMISE:
@@ -236,7 +236,7 @@ namespace lib.Streams
             byte[] headerAndContinuationPayloades = HTTP2Frame.CombineHeaderPayloads(headerAndContinuationFrames);
             // decompress
             var headerBlockFragment = new ArraySegment<byte>(headerAndContinuationPayloades);
-            byte[] decompressedHeaders = new byte[HTTP2Frame.SETTINGS_MAX_FRAME_SIZE];
+            byte[] decompressedHeaders = new byte[Server.MAX_HTTP2_FRAME_SIZE];
             List<HeaderField> lstheaders = new List<HeaderField>();
             var dencodeResult = owner.hpackDecoder.DecodeHeaderBlockFragment(headerBlockFragment, (uint)HTTP2Frame.MaxFrameSize, lstheaders); // todo max header size
             foreach (var item in lstheaders)
@@ -245,24 +245,24 @@ namespace lib.Streams
             }
             string method = lstheaders.Find(x => x.Name == ":method").Value;
             string path = lstheaders.Find(x => x.Name == ":path").Value;
+            string contentType = lstheaders.Find(x => x.Name == ":content-type").Value;
+            string accept = lstheaders.Find(x => x.Name == ":accept").Value;
 
-            if (Server.registerdActionsOnUrls.ContainsKey(method+path))
+            if (false)
             {
-                Action<byte[], byte[]> action = Server.registerdActionsOnUrls[method + path];
-                HTTP2Frame request = new HTTP2Frame(streamID);
-                byte[] bytearrayresponse = new byte[0];
-
                 switch (method)
                 {
                     case "GET":
-                        // todo
-                        HTTP2RequestGenerator.SendData(this, streamID, bytearrayresponse, "text/html");
+                        Request getRequest = new Request(null, null);
+                        Response getResponse = new Response(this, streamID);
+                        RestURI.RestLibrary.Execute("GET", path, getRequest, getResponse);
                         break;
                     case "POST":
                         HTTP2Frame[] dataFrames = currentstream.Frames.FindAll(x => x.Type == HTTP2Frame.DATA).ToArray();
-                        byte[] dataPayload = HTTP2Frame.CombineDataPayloads(dataFrames);
-                        //todo
-                        HTTP2RequestGenerator.SendOk(this, streamID);
+                        byte[] datapayload = HTTP2Frame.CombineDataPayloads(dataFrames);
+                        Request postRequest = new Request(datapayload, contentType);
+                        Response postResponse = new Response(this, streamID);
+                        RestURI.RestLibrary.Execute("POST", path, postRequest, postResponse);
                         break;
                     default:
                         HTTP2RequestGenerator.SendMethodNotAllowed(this, streamID);
@@ -280,15 +280,19 @@ namespace lib.Streams
             {
                 file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\" + path;
             }
-            HTTP2RequestGenerator.SendFile(this, streamID, file);
             if (file.Contains("index.html"))
             {
                 Console.WriteLine("Push promise <<<<<<<<<<<<<<<<<<<");
-                HTTP2RequestGenerator.SendFileWithPushPromise(this, owner.NextStreamId, Environment.CurrentDirectory + "\\" + Server.DIR + "\\about.html");
+                int promiseId = owner.NextStreamId;
+                string promiseFile = Environment.CurrentDirectory + "\\" + Server.DIR + "\\about.html";
+               // HTTP2RequestGenerator.SendPushPromise(this, streamID, promiseFile);
+               // Thread.Sleep(1000);
+               // HTTP2RequestGenerator.SendFile(this, promiseId, promiseFile);
                 // HTTP2RequestGenerator.SendFileWithPushPromise(this, owner.NextStreamId, Environment.CurrentDirectory + "\\" + Server.DIR + "\\Capture.jpg");
                 // HTTP2RequestGenerator.SendFileWithPushPromise(this, owner.NextStreamId, Environment.CurrentDirectory + "\\" + Server.DIR + "\\Capture2.jpg");
                 Console.WriteLine("Push promise >>>>>>>>>>>>>>>>>>>>");
             }
+            HTTP2RequestGenerator.SendFile(this, streamID, file);
 
         }
 
