@@ -23,7 +23,7 @@ namespace lib
         private string IpAddress;
         internal static int Port { get; private set; }
         private X509Certificate2 Certificate;
-        internal static Dictionary<string, Action<HTTP1Request, Response>> registerdActionsOnUrls;
+        internal static Dictionary<string, Action<HTTP1Request, HTTP1Response>> registerdActionsOnUrls;
         private List<HandleClient> clients = new List<HandleClient>();
 
 
@@ -43,7 +43,7 @@ namespace lib
 
         public Server(string ipAddress, X509Certificate2 certificate = null)
         {
-            registerdActionsOnUrls = new Dictionary<string, Action<HTTP1Request, Response>>();
+            registerdActionsOnUrls = new Dictionary<string, Action<HTTP1Request, HTTP1Response>>();
             IpAddress = ipAddress;
             Certificate = certificate;
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
@@ -87,7 +87,7 @@ namespace lib
             }
         }
 
-        public void Get(string url, Action<HTTP1Request, Response> action)
+        public void Get(string url, Action<HTTP1Request, HTTP1Response> action)
         {
             //registerdActionsOnUrls.Add(url, action);
             RestURI.RestLibrary.AddURI("GET", url, null);
@@ -122,8 +122,10 @@ namespace lib
 
         public static void testRestURI()
         {
-            RestURI.RestLibrary.AddURI("GET", "shoppinglists/favourite/:householdid/:username/:shoppinglistid", (a, b) => Console.Write("1"));
-            RestURI.RestLibrary.AddURI("GET", "shoppinglists/favourite/:householdid/", (a, b) => Console.Write("2"));
+            RestURI.RestLibrary.AddURI("GET", "shoppinglists/favourite/:householdid/username/shoppinglistid",(req,res) => {
+                res.Send($"HouseholdID: {req.Params["householdid"]}, username: {req.Params["username"]}, shoppinglistid: {req.Params["shoppinglistid"]}");
+            });
+            RestURI.RestLibrary.AddURI("GET", "shoppinglists/favourite/:householdid/", (req, res) => Console.Write("2"));
         }
     }
 }

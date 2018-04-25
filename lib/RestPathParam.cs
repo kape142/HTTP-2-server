@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using lib.HTTPObjects;
 using static lib.RestURI;
 
 namespace lib
@@ -24,9 +25,25 @@ namespace lib
             }
             if(newProperties.Length > HTTPMethods.Length)
             {
+                this.URI = URI.Replace(":","");
                 Array.Resize(ref HTTPMethods, newProperties.Length);
             }
+            if (HTTPMethods[newProperties.Length - 1] == null)
+                HTTPMethods[newProperties.Length - 1] = new Dictionary<string, HTTPMethod>();
             HTTPMethods[newProperties.Length - 1].Add(method, callback);
+        }
+
+        internal void Execute(string method, string URI, Request req, Response res)
+        {
+            string[] path = URI.Split("/");
+            int length = path.Length;
+            string[] keyPath = this.URI.Split("/");
+            if(HTTPMethods[length-1] == null || !HTTPMethods[length-1].ContainsKey(method))
+                throw new ArgumentException($"The method {method} has not yet been defined for this path");
+            for(int i = 0; i < length; i++)
+            {
+                req.AddParams((keyPath[i], path[i]));
+            }
         }
 
     }

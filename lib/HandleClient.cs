@@ -104,7 +104,7 @@ namespace lib
                         // a request has ben recived
                         HTTP1Request req = new HTTP1Request(msg);
                         Console.WriteLine(req.ToString());
-                        Response res = Response.From(req);
+                        HTTP1Response res = HTTP1Response.From(req);
                         Console.WriteLine(res.ToString());
                         Task.Run(() => WriteResponse(res));
                          // todo vent på preface
@@ -275,7 +275,7 @@ namespace lib
             }
         }
         
-        private async Task WriteResponse(Response r)
+        private async Task WriteResponse(HTTP1Response r)
         {
             try
             {

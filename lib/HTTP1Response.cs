@@ -5,7 +5,7 @@ using System.Text;
 
 namespace lib
 {
-    public class Response
+    public class HTTP1Response
     {
         public string HTTPv { get; private set; }
         public string Status { get; private set; }
@@ -13,7 +13,7 @@ namespace lib
         public char[] Data { get; private set; }
 
 
-        internal static Response From(HTTP1Request req)
+        internal static HTTP1Response From(HTTP1Request req)
         {
             if (req == null)
             {
@@ -29,8 +29,8 @@ namespace lib
                     }
                     if (Server.registerdActionsOnUrls.ContainsKey("/" + req.HttpUrl))
                     {
-                        Action<HTTP1Request, Response> a = Server.registerdActionsOnUrls["/"+ req.HttpUrl];
-                        Response res = new Response(req.Httpv, Server.OK, null, null);
+                        Action<HTTP1Request, HTTP1Response> a = Server.registerdActionsOnUrls["/"+ req.HttpUrl];
+                        HTTP1Response res = new HTTP1Response(req.Httpv, Server.OK, null, null);
                         a(req, res);
                         return res;
                     }
@@ -42,13 +42,13 @@ namespace lib
                             return HTTP1Response(req);
                         default:
                             Console.WriteLine("Method not allowed: " + req.Type);
-                            return new Response(Server.HTTP1V, "405 Method Not Allowed", null, new char[0]);
+                            return new HTTP1Response(Server.HTTP1V, "405 Method Not Allowed", null, new char[0]);
                     }
                 case "HTTP/2.0":
                     return null;
                 default:
                     Console.WriteLine("HTTP version not supported: " + req.Httpv);
-                    return new Response(Server.HTTP1V, "405 Method Not Allowed", null, new char[0]);
+                    return new HTTP1Response(Server.HTTP1V, "405 Method Not Allowed", null, new char[0]);
             }
             #region old
             /*
@@ -129,12 +129,12 @@ namespace lib
             this.Data = data;
         }
 
-        private static Response HTTP1Response(HTTP1Request req, bool headrequest=false)
+        private static HTTP1Response HTTP1Response(HTTP1Request req, bool headrequest=false)
         {
             Console.WriteLine("Responding with http/1.1...");
             Dictionary<string, string> lst = new Dictionary<string, string>();
             lst.Add("Server", Server.SERVER);
-            if (headrequest) return new Response(Server.HTTP1V, Server.NO_CONTENT, lst, new char[0]);
+            if (headrequest) return new HTTP1Response(Server.HTTP1V, Server.NO_CONTENT, lst, new char[0]);
             String file = null;
             if (req.HttpUrl == "")
             {
@@ -160,7 +160,7 @@ namespace lib
                         lst.Add("Connection", "Keep-Alive");
                         //char[] outarray = new char[d.Length*2];
                         //Convert.ToBase64CharArray(d, 0, d.Length, outarray, 0);
-                        return new Response(Server.HTTP1V, Server.OK, lst, (headrequest)? new char[0] : d);
+                        return new HTTP1Response(Server.HTTP1V, Server.OK, lst, (headrequest)? new char[0] : d);
                     }
                 }
             }
@@ -171,7 +171,7 @@ namespace lib
             }
         }
 
-        private static Response DoUppgrade(HTTP1Request req)
+        private static HTTP1Response DoUppgrade(HTTP1Request req)
         {
             string value = req.HeaderLines["Upgrade"];
             Console.WriteLine("Client is requesting an upgrade");
@@ -195,12 +195,12 @@ namespace lib
             }
         }
 
-        private static Response NullRequest()
+        private static HTTP1Response NullRequest()
         {
-            return new Response(Server.HTTP1V, Server.ERROR, null, new char[0]);
+            return new HTTP1Response(Server.HTTP1V, Server.ERROR, null, new char[0]);
         }
 
-        private Response(string httpv, string status, IDictionary<string, string> headerlines, char[] data)
+        private HTTP1Response(string httpv, string status, IDictionary<string, string> headerlines, char[] data)
         {
             HTTPv = httpv;
             Status = status;
@@ -209,7 +209,7 @@ namespace lib
 
         }
 
-        private static Response GetResponseForUpgradeToh2c()
+        private static HTTP1Response GetResponseForUpgradeToh2c()
         {
             Dictionary<string, string> lst = new Dictionary<string, string>
             {
@@ -217,9 +217,9 @@ namespace lib
                 { "Upgrade", "h2c" }
             };
             char[] d = new char[0];
-            return new Response(Server.HTTP1V, Server.SWITCHING_PROTOCOLS, lst, d);
+            return new HTTP1Response(Server.HTTP1V, Server.SWITCHING_PROTOCOLS, lst, d);
         }
-        private static Response GetResponseForUpgradeToh2()
+        private static HTTP1Response GetResponseForUpgradeToh2()
         {
             Dictionary<string, string> lst = new Dictionary<string, string>
             {
@@ -227,7 +227,7 @@ namespace lib
                 { "Upgrade", "h2" }
             };
             char[] d = new char[0];
-            return new Response(Server.HTTP1V, Server.SWITCHING_PROTOCOLS, lst, d);
+            return new HTTP1Response(Server.HTTP1V, Server.SWITCHING_PROTOCOLS, lst, d);
         }
 
         public override string ToString()
