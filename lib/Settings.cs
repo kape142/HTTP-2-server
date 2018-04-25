@@ -61,7 +61,6 @@ namespace lib
             MaxHeaderListSize = 0,
         };
 
-
         public readonly static Settings Max = new Settings
         {
             HeaderTableSize = uint.MaxValue,

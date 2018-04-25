@@ -130,6 +130,18 @@ namespace lib.Streams
             return IncomingStreams.Exists(x => x.Id == streamId);
         }
 
+        private void CloseStream(int streamId)
+        {
+            OutgoingStreams.FindAll(x => x.Id == streamId).ForEach( y => y.State = StreamState.Closed);
+            IncomingStreams.FindAll(x => x.Id == streamId).ForEach( y => y.State = StreamState.Closed);
+            lock (lockFramesToSend)
+            {
+                var frames = new List<HTTP2Frame>(framesToSend.ToArray());
+                frames.RemoveAll(x => x.StreamIdentifier == streamId);
+                framesToSend = new Queue<HTTP2Frame>(frames.ToArray());
+            }
+        }
+
         internal HTTP2Stream GetIncommingStreams(int streamId)
         {
             return IncomingStreams.Find(x => x.Id == streamId);
@@ -141,6 +153,12 @@ namespace lib.Streams
             {
                 case HTTP2Frame.DATA:
                     Console.WriteLine("DATA frame recived\n" + frame.ToString());
+                    if(frame.StreamIdentifier == 0)
+                    {
+                        // todo svar med protocol error
+                    }
+                    DataPayload dp = frame.GetDataPayloadDecoded();
+                    if (dp.Data != null) Console.WriteLine(Convert.ToBase64String(dp.Data));
                     break;
                 case HTTP2Frame.HEADERS:
                     Console.WriteLine("HEADERS frame recived\n" + frame.ToString());
@@ -157,6 +175,9 @@ namespace lib.Streams
                     break;
                 case HTTP2Frame.RST_STREAM:
                     Console.WriteLine("RST_STREAM frame recived\n" + frame.ToString());
+                    RSTStreamPayload rst = frame.GetRSTStreamPayloadDecoded();
+                    Console.WriteLine($"Error code: {rst.ErrorCode} on stream: {frame.StreamIdentifier}");
+                    CloseStream(frame.StreamIdentifier);
                     break;
                 case HTTP2Frame.SETTINGS:
                     Console.WriteLine("SETTINGS frame recived\n" + frame.ToString());
@@ -166,6 +187,8 @@ namespace lib.Streams
                         break;
                     }
                     if (frame.FlagAck) break;
+                    SettingsPayload sp = frame.GetSettingsPayloadDecoded();
+                    Console.WriteLine(sp.ToString());
                     SendFrame(new HTTP2Frame(0).AddSettingsPayload(new (ushort, uint)[0], true));
                     break;
                 case HTTP2Frame.PUSH_PROMISE:
@@ -173,11 +196,16 @@ namespace lib.Streams
                     break;
                 case HTTP2Frame.PING:
                     Console.WriteLine("PING frame recived\n" + frame.ToString());
+                    if (!frame.FlagAck)
+                    {
+                        SendFrame(new HTTP2Frame(frame.StreamIdentifier).AddPingPayload(frame.Payload));
+                    }
                     break;
                 case HTTP2Frame.GOAWAY:
                     Console.WriteLine("GOAWAY frame recived\n" + frame.ToString());
                     GoAwayPayload gp = frame.GetGoAwayPayloadDecoded();
                     Console.WriteLine(gp.ToString());
+                    owner.Close();
                     break;
                 case HTTP2Frame.WINDOW_UPDATE:
                     Console.WriteLine("WINDOW_UPDATE frame recived\n" + frame.ToString());
@@ -225,6 +253,28 @@ namespace lib.Streams
             string method = lstheaders.Find(x => x.Name == ":method").Value;
             string path = lstheaders.Find(x => x.Name == ":path").Value;
 
+            if (Server.registerdActionsOnUrls.ContainsKey(method+path))
+            {
+                Action<byte[], byte[]> action = Server.registerdActionsOnUrls[method + path];
+                HTTP2Frame request = new HTTP2Frame(streamID);
+                byte[] bytearrayresponse = new byte[0];
+
+                switch (method)
+                {
+                    case "GET":
+                        action(request.Payload, bytearrayresponse);
+                        HTTP2RequestGenerator.SendData(this, streamID, bytearrayresponse, "text/html");
+                        break;
+                    case "POST":
+                        HTTP2RequestGenerator.SendMethodNotAllowed(this, streamID);
+                        break;
+                    default:
+                        HTTP2RequestGenerator.SendMethodNotAllowed(this, streamID);
+                        break;
+                }
+                return;
+            }
+
             string file;
             if (path is null || path == "" || path == "/")
             {
@@ -234,7 +284,15 @@ namespace lib.Streams
             {
                 file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\" + path;
             }
-            HTTPRequestHandler.SendFile(this, streamID, file);
+            HTTP2RequestGenerator.SendFile(this, streamID, file);
+            if (file.Contains("index.html"))
+            {
+                Console.WriteLine("Push promise <<<<<<<<<<<<<<<<<<<");
+                HTTP2RequestGenerator.SendFileWithPushPromise(this, owner.NextStreamId, Environment.CurrentDirectory + "\\" + Server.DIR + "\\about.html");
+                HTTP2RequestGenerator.SendFileWithPushPromise(this, owner.NextStreamId, Environment.CurrentDirectory + "\\" + Server.DIR + "\\Capture.jpg");
+                HTTP2RequestGenerator.SendFileWithPushPromise(this, owner.NextStreamId, Environment.CurrentDirectory + "\\" + Server.DIR + "\\Capture2.jpg");
+                Console.WriteLine("Push promise >>>>>>>>>>>>>>>>>>>>");
+            }
 
         }
 
@@ -244,42 +302,26 @@ namespace lib.Streams
             if (url == ""||url.Contains("index.html"))
             {
                 file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\index.html";
-                HTTPRequestHandler.SendFile(this, 1, file);
+                HTTP2RequestGenerator.SendFile(this, 1, file);
                 
                 //Server Push simple
                 file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\style.css";
                 if (File.Exists(file))
                 {
                     streamIdTracker += 2;
-                    HTTPRequestHandler.SendFile(this, streamIdTracker, file);
+                    HTTP2RequestGenerator.SendFile(this, streamIdTracker, file);
                 }
                 file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\script.js";
                 if (File.Exists(file))
                 {
                     streamIdTracker += 2;
-                    HTTPRequestHandler.SendFile(this, streamIdTracker, file);
+                    HTTP2RequestGenerator.SendFile(this, streamIdTracker, file);
                 }
             }
             else
             {
                 file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\" + url;
-                HTTPRequestHandler.SendFile(this, streamIdTracker++, file);
-
-                //Server Push simple
-                url.Replace("html","js");
-                file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\"+url;
-                if (File.Exists(file))
-                {
-                    streamIdTracker += 2;
-                    HTTPRequestHandler.SendFile(this, streamIdTracker, file);
-                }
-                url.Replace("js", "css");
-                file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\" + url;
-                if (File.Exists(file))
-                {
-                    streamIdTracker += 2;
-                    HTTPRequestHandler.SendFile(this, streamIdTracker, file);
-                }
+                HTTP2RequestGenerator.SendFile(this, streamIdTracker++, file);
             }
         }
 

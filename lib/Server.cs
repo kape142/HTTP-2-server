@@ -11,19 +11,15 @@ namespace lib
     public class Server
     {
         internal const int HTTPS_PORT = 443;
-        internal const string HTTP1V = "HTTP/1.1";
-        internal const string SWITCHING_PROTOCOLS = "101 Switching Protocols";
-        internal const string OK = "200 OK";
-        internal const string NO_CONTENT = "204 No Content";
-        internal const string ERROR = "400 Bad Request";
-        internal const string SERVER = "prosjekthttp2";
+        
         internal const string DIR = "WebApp";
         internal const int MAX_HTTP2_FRAME_SIZE = 16384;
         private string IpAddress;
         internal static int Port { get; private set; }
         private X509Certificate2 Certificate;
-        internal static Dictionary<string, Action<HTTP1Request, Response>> registerdActionsOnUrls;
+        internal static Dictionary<string, Action<object, object>> registerdActionsOnUrls;
         private List<HandleClient> clients = new List<HandleClient>();
+        // public delegate void delAction<T1, T2>(T1 req, out T2 res);
 
 
         /*
@@ -40,15 +36,13 @@ namespace lib
         }
         */
 
+
         public Server(string ipAddress, X509Certificate2 certificate = null)
         {
-            registerdActionsOnUrls = new Dictionary<string, Action<HTTP1Request, Response>>();
+            registerdActionsOnUrls = new Dictionary<string, Action<object, object>>();
             IpAddress = ipAddress;
             Certificate = certificate;
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-            // Thread t = new Thread(Clean);
-            // t.Start();
-
         }
 
 
@@ -86,10 +80,30 @@ namespace lib
             }
         }
 
-        public void Get(string url, Action<HTTP1Request, Response> action)
-        {
-            registerdActionsOnUrls.Add(url, action);
-        }
+        //private void Get(string url, Action<object, object> action)
+        //{
+        //    registerdActionsOnUrls.Add("GET" + url, action);
+        //}
+        //
+        //public void Get(string url, Action<byte[], byte[]> action)
+        //{
+        //    registerdActionsOnUrls.Add("GET" + url, action);
+        //}
+
+        //public void Get(string url, Action<HTTP1Request, Response> action)
+        //{
+        //    Get(url, action);
+        //}
+        //
+        //public void Get(string url, delAction<byte[], byte[]> action)
+        //{
+        //    Get(url, action);
+        //}
+        //
+        //public void Get(string url, delAction<object, object> action)
+        //{
+        //    registerdActionsOnUrls.Add("GET" + url, action);
+        //}
 
         //private void Clean()
         //{
