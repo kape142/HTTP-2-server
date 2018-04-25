@@ -1,9 +1,3 @@
-Implementert funksjonalitet
-Fremtidig arbeid med oversikt over mangler
-Eksempler som viser bruken av biblioteket
-
-  
-
 # HTTP-2-server
 
 An implementation of the [HTTP/2 protocol](https://tools.ietf.org/html/rfc7540) in .NET Core
@@ -16,23 +10,25 @@ These instructions will get you a copy of the project up and running on your loc
 
 To run a server based on this library you must have [.NET Core Runtime 2.1-Preview2](https://github.com/dotnet/core/blob/master/release-notes/download-archives/2.1.0-preview2-download.md) installed, as this is, as of today, the only version of .NET Core supporting SSL connection with ALPN negotiation.
 
+
+
 ### Installing
 
 A step by step series of examples that tell you have to get a development env running
 
-Say what the step will be
+Create an instance of the Server
 
-```
-Give the example
-```
-
-And repeat
-
-```
-until finished
+```cs
+var serverCertificate = new X509Certificate2("Certificate/TcpTLSServer_TemporaryKey.pfx", "1234");
+Server server = new Server(serverCertificate);
 ```
 
-End with an example of getting some data out of the system or using it for a little demo
+Have server start listening
+
+```cs
+//parameter is the port you wish to listen to
+server.listen(443);
+```
 
 ## Running the tests
 
@@ -60,6 +56,7 @@ Add additional notes about how to deploy this on a live system
 
 
 ## Implementations
+
 ### Establshing a connection over HTTP/2
 * Starting HTTP/2 for "http" URIs, ref [RFC7540 Section 3.2](https://tools.ietf.org/html/rfc7540#section-3.2)
 * Starting HTTP/2 for "https" URIs, ref [RFC7540 Section 3.3](https://tools.ietf.org/html/rfc7540#section-3.3)
@@ -68,6 +65,7 @@ Add additional notes about how to deploy this on a live system
 ### Frames
 * Frame format (Encoding and Decoding), ref [RFC7540 Section 4.1](https://tools.ietf.org/html/rfc7540#section-4.1)
 * Header Compression and Decompression (from NuGet), ref [RFC7540 Section 4.3](https://tools.ietf.org/html/rfc7540#section-4.3)
+
 #### Frame Definitions [RFC7540 Section 6](https://tools.ietf.org/html/rfc7540#section-6)
 All.
 
@@ -88,7 +86,6 @@ All.
 * Cleanup classes
 * Implement continous integration for project.
 * Further work on flowcontroll and recieving data from client.
-
 
 ## Built With
 
