@@ -548,6 +548,20 @@ namespace lib.HTTPObjects
             return bytes.ToArray();
         }
 
+        public static byte[] CombineDataPayloads(params HTTP2Frame[] frames)
+        {
+            if (frames is null || frames.Length < 1) return new byte[0];
+
+            List<byte> bytes = new List<byte>();
+            for (int i = 0; i < frames.Length; i++)
+            {
+                if (frames[i].Type != DATA) throw new ArgumentException("CombineDataPayloads() does not support frames of a different type than data");
+                DataPayload dp = frames[i].GetDataPayloadDecoded();
+                bytes.AddRange(dp.Data);
+            }
+            return bytes.ToArray();
+        }
+
         private byte[] GetPartOfByteArray(int start, int end)
         {
             return Bytes.GetPartOfByteArray(start, end, byteArray);

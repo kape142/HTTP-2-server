@@ -163,9 +163,9 @@ namespace lib.Streams
                 case HTTP2Frame.HEADERS:
                     Console.WriteLine("HEADERS frame recived\n" + frame.ToString());
                     GetIncommingStreams(frame.StreamIdentifier).Frames.Add(frame);
-                    if (frame.FlagEndHeaders)
+                    if (frame.FlagEndStream)
                     {
-                        EndOfHeaders(frame.StreamIdentifier);
+                        EndOfStream(frame.StreamIdentifier);
                         break;
                     }
                     Console.WriteLine(frame.ToString());
@@ -213,25 +213,18 @@ namespace lib.Streams
                 case HTTP2Frame.CONTINUATION:
                     Console.WriteLine("CONTINUATION frame recived\n" + frame.ToString());
                     GetIncommingStreams(frame.StreamIdentifier).Frames.Add(frame);
-                    if (frame.FlagEndHeaders)
+                    if (frame.FlagEndStream)
                     {
-                        EndOfHeaders(frame.StreamIdentifier);
+                        EndOfStream(frame.StreamIdentifier);
                         break;
                     }
                     break;
                 default:
                     break;
             }
-            // IncomingStreams.Find(x => x.Id == frame.StreamIdentifier).Frames.Enqueue(frame);
-            // if (frame.FlagEndHeaders)
-            // {
-            //     // sette sammen fragmentene og svare
-            //     IncomingStreams.Find(x => x.Id == frame.StreamIdentifier).EndOfHeaders();
-            // }
         }
 
-        // en annen metode har funnet ut at
-        void EndOfHeaders(int streamID)
+        void EndOfStream(int streamID)
         {
             int index = IncomingStreams.FindIndex(x => x.Id == streamID);
             HTTP2Stream currentstream = IncomingStreams[index];
@@ -239,10 +232,10 @@ namespace lib.Streams
             OutgoingStreams.Add(currentstream);
 
             // concatinate the payloads
-            HTTP2Frame[] headers = currentstream.Frames.FindAll(x => x.Type == HTTP2Frame.HEADERS || x.Type == HTTP2Frame.CONTINUATION).ToArray();
-            byte[] payloads = HTTP2Frame.CombineHeaderPayloads(headers);
+            HTTP2Frame[] headerAndContinuationFrames = currentstream.Frames.FindAll(x => x.Type == HTTP2Frame.HEADERS || x.Type == HTTP2Frame.CONTINUATION).ToArray();
+            byte[] headerAndContinuationPayloades = HTTP2Frame.CombineHeaderPayloads(headerAndContinuationFrames);
             // decompress
-            var headerBlockFragment = new ArraySegment<byte>(payloads);
+            var headerBlockFragment = new ArraySegment<byte>(headerAndContinuationPayloades);
             byte[] decompressedHeaders = new byte[HTTP2Frame.SETTINGS_MAX_FRAME_SIZE];
             List<HeaderField> lstheaders = new List<HeaderField>();
             var dencodeResult = owner.hpackDecoder.DecodeHeaderBlockFragment(headerBlockFragment, (uint)HTTP2Frame.SETTINGS_MAX_FRAME_SIZE, lstheaders); // todo max header size
@@ -262,11 +255,14 @@ namespace lib.Streams
                 switch (method)
                 {
                     case "GET":
-                        action(request.Payload, bytearrayresponse);
+                        // todo
                         HTTP2RequestGenerator.SendData(this, streamID, bytearrayresponse, "text/html");
                         break;
                     case "POST":
-                        HTTP2RequestGenerator.SendMethodNotAllowed(this, streamID);
+                        HTTP2Frame[] dataFrames = currentstream.Frames.FindAll(x => x.Type == HTTP2Frame.DATA).ToArray();
+                        byte[] dataPayload = HTTP2Frame.CombineDataPayloads(dataFrames);
+                        //todo
+                        HTTP2RequestGenerator.SendOk(this, streamID);
                         break;
                     default:
                         HTTP2RequestGenerator.SendMethodNotAllowed(this, streamID);
@@ -289,8 +285,8 @@ namespace lib.Streams
             {
                 Console.WriteLine("Push promise <<<<<<<<<<<<<<<<<<<");
                 HTTP2RequestGenerator.SendFileWithPushPromise(this, owner.NextStreamId, Environment.CurrentDirectory + "\\" + Server.DIR + "\\about.html");
-                HTTP2RequestGenerator.SendFileWithPushPromise(this, owner.NextStreamId, Environment.CurrentDirectory + "\\" + Server.DIR + "\\Capture.jpg");
-                HTTP2RequestGenerator.SendFileWithPushPromise(this, owner.NextStreamId, Environment.CurrentDirectory + "\\" + Server.DIR + "\\Capture2.jpg");
+                // HTTP2RequestGenerator.SendFileWithPushPromise(this, owner.NextStreamId, Environment.CurrentDirectory + "\\" + Server.DIR + "\\Capture.jpg");
+                // HTTP2RequestGenerator.SendFileWithPushPromise(this, owner.NextStreamId, Environment.CurrentDirectory + "\\" + Server.DIR + "\\Capture2.jpg");
                 Console.WriteLine("Push promise >>>>>>>>>>>>>>>>>>>>");
             }
 
