@@ -24,16 +24,14 @@ namespace lib
                     throw new ArgumentException("The path parameters for this URI have already been defined as something else");
             }
             if(newProperties.Length > HTTPMethods.Length)
-            {
-                this.URI = URI.Replace(":","");
                 Array.Resize(ref HTTPMethods, newProperties.Length);
-            }
             if (HTTPMethods[newProperties.Length - 1] == null)
                 HTTPMethods[newProperties.Length - 1] = new Dictionary<string, HTTPMethod>();
             HTTPMethods[newProperties.Length - 1].Add(method, callback);
+            this.URI = (newProperties.Length > oldProperties.Length) ? URI : this.URI;
         }
 
-        internal void Execute(string method, string URI, Request req, Response res)
+        internal void Execute(string method, string URI, Request req, IResponse res)
         {
             string[] path = URI.Split("/");
             int length = path.Length;
@@ -44,6 +42,18 @@ namespace lib
             {
                 req.AddParams((keyPath[i], path[i]));
             }
+            HTTPMethods[length - 1][method].Invoke(req, res);
+        }
+
+        internal bool HasMethod(string method, string URI)
+        {
+            string[] path = URI.Split("/");
+            int length = path.Length;
+            string[] keyPath = this.URI.Split("/");
+            if (HTTPMethods[length - 1] == null || !HTTPMethods[length - 1].ContainsKey(method))
+                return false;
+            else
+                return true;
         }
 
     }

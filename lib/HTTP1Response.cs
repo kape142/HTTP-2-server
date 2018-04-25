@@ -37,9 +37,9 @@ namespace lib
                     switch (req.Type)
                     {
                         case "HEAD":
-                            return HTTP1Response(req, true);
+                            return sdHTTP1Response(req, true);
                         case "GET":
-                            return HTTP1Response(req);
+                            return sdHTTP1Response(req);
                         default:
                             Console.WriteLine("Method not allowed: " + req.Type);
                             return new HTTP1Response(Server.HTTP1V, "405 Method Not Allowed", null, new char[0]);
@@ -129,7 +129,7 @@ namespace lib
             this.Data = data;
         }
 
-        private static HTTP1Response HTTP1Response(HTTP1Request req, bool headrequest=false)
+        private static HTTP1Response sdHTTP1Response(HTTP1Request req, bool headrequest=false)
         {
             Console.WriteLine("Responding with http/1.1...");
             Dictionary<string, string> lst = new Dictionary<string, string>();
