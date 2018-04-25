@@ -21,7 +21,7 @@ namespace UnitTesting
                 nrOfFrames = fs.Length/HTTP2Frame.SETTINGS_MAX_FRAME_SIZE + ((fs.Length % HTTP2Frame.SETTINGS_MAX_FRAME_SIZE != 0) ? 1 : 0);
             }
 
-            HTTPRequestHandler.SendFile(streamHandler, 0, url);
+            HTTP2RequestGenerator.SendFile(streamHandler, 0, url);
             Assert.True(streamHandler.GetIncommingStreams(0).Frames.Count == nrOfFrames);
         }
     }

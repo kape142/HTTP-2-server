@@ -6,12 +6,6 @@ namespace lib
 {
     public class HTTP1Request
     {
-        public string Type { get; private set; }
-        public string HttpUrl { get; private set; }
-        public string Httpv { get; set; }
-        public IDictionary<string, string> HeaderLines { get; set; }
-        public bool IsUpgradeTo2 { get; set; }
-
         public HTTP1Request(string data)
         {
             if (data.Length < 5) throw new ArgumentException("The request does not contains enough data");
@@ -31,6 +25,12 @@ namespace lib
             }
         }
 
+        public string Type { get; private set; }
+        public string HttpUrl { get; private set; }
+        public string Httpv { get; set; }
+        public IDictionary<string, string> HeaderLines { get; set; }
+        public bool IsUpgradeTo2 { get; set; }
+
         public override string ToString()
         {
             string ret = "";
@@ -40,7 +40,5 @@ namespace lib
             }
             return Type + " " + HttpUrl + " " + Httpv + "\n" + ret;
         }
-
-
     }
 }
