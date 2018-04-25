@@ -14,6 +14,7 @@ namespace lib
         
         internal const string DIR = "WebApp";
         internal const int MAX_HTTP2_FRAME_SIZE = 16384;
+
         private string IpAddress;
         internal static int Port { get; private set; }
         private X509Certificate2 Certificate;
@@ -104,6 +105,11 @@ namespace lib
         //{
         //    registerdActionsOnUrls.Add("GET" + url, action);
         //}
+        public void Get(string url, Action<HTTP1Request, HTTP1Response> action)
+        {
+            //registerdActionsOnUrls.Add(url, action);
+            RestURI.RestLibrary.AddURI("GET", url, null);
+        }
 
         //private void Clean()
         //{
@@ -124,12 +130,20 @@ namespace lib
                 Console.WriteLine(Convert.ToString(b, 2).PadLeft(8, '0'));
 
             /*Console.WriteLine(fc.ToString());
-            fc.AddSettingsPayload(new Tuple<short, int>[] {new Tuple<short,int>(HTTP2Frame.SETTINGS_MAX_FRAME_SIZE,128) });
+            fc.AddSettingsPayload(new Tuple<short, int>[] {new Tuple<short,int>(HTTP2Frame.MaxFrameSize,128) });
             var by = fc.GetBytes();
             foreach (byte b in by)
                 Console.Write($"{b} ");
             Console.WriteLine();
             Console.WriteLine(fc.ToString());*/
+        }
+
+        public static void testRestURI()
+        {
+            RestURI.RestLibrary.AddURI("GET", "shoppinglists/favourite/:householdid/username/shoppinglistid",(req,res) => {
+                res.Send($"HouseholdID: {req.Params["householdid"]}, username: {req.Params["username"]}, shoppinglistid: {req.Params["shoppinglistid"]}");
+            });
+            RestURI.RestLibrary.AddURI("GET", "shoppinglists/favourite/:householdid/", (req, res) => Console.Write("2"));
         }
     }
 }

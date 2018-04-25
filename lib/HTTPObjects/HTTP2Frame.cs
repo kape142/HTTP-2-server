@@ -38,7 +38,7 @@ namespace lib.HTTPObjects
         public const ushort SETTINGS_ENABLE_PUSH = 0x2;
         public const ushort SETTINGS_MAX_CONCURRENT_STREAMS = 0x3;
         public const ushort SETTINGS_INITIAL_WINDOW_SIZE = 0x4;
-        public const ushort SETTINGS_MAX_FRAME_SIZE = 16384;
+        public const ushort SETTINGS_MAX_FRAME_SIZE = 0x5;
         public const ushort SETTINGS_MAX_HEADER_LIST_SIZE = 0x6;
 
         //Error codes
@@ -58,6 +58,7 @@ namespace lib.HTTPObjects
         public const byte HTTP_1_1_REQUIRED = 0xd;
         #endregion
         //Object Variables
+        public const ushort MaxFrameSize = 16384; //todo fix
         private static int maxFrameSize = 16384;
         private byte[] byteArray;
 
@@ -272,7 +273,7 @@ namespace lib.HTTPObjects
             return this;
         }
         
-        public HTTP2Frame AddPriorityPayload(bool streamDependencyIsExclusive, int streamDependency, byte weight = 0)
+        public HTTP2Frame AddPriorityPayload(bool streamDependencyIsExclusive, int streamDependency, byte weight = 1)
         {
             int first32 = PutBoolAndIntTo32bitInt(streamDependencyIsExclusive, streamDependency);
             byte[] first32Arr = ConvertToByteArray(first32);
@@ -449,7 +450,7 @@ namespace lib.HTTPObjects
             PriorityPayload pp = new PriorityPayload();
             pp.StreamDependencyIsExclusive = split.bit32;
             pp.StreamDependency = split.int31;
-            pp.Weight = GetPartOfPayload(3, 4)[0];
+            pp.Weight = GetPartOfPayload(4, 5)[0];
             return pp;
         }
 
