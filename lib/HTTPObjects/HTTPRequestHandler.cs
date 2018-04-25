@@ -24,11 +24,13 @@ namespace lib.HTTPObjects
                 SendNotFound(streamHandler, streamId);
                 return;
             }
+
             List<HeaderField> headers = new List<HeaderField>(){
                 HEADER_OK,
                 new HeaderField{ Name = "content-type", Value = Mapping.MIME_MAP[fi.Extension], Sensitive = false },
                 new HeaderField{ Name = "Content-Encoding", Value = "gzip", Sensitive = false },
             };
+            FileInfo compr = fi = ZipStream.Compress(fi);
             byte[] commpresedHeaders = new byte[HTTP2Frame.SETTINGS_MAX_FRAME_SIZE];
             // Encode a header block fragment into the output buffer
             var headerBlockFragment = new ArraySegment<byte>(commpresedHeaders);
@@ -45,7 +47,6 @@ namespace lib.HTTPObjects
             streamHandler.SendFrame(headerframe);
 
             // send file
-            fi = ZipStream.Compress(fi);
             using (FileStream fs = fi.OpenRead())
             using (BinaryReader reader = new BinaryReader(fs))
             {
