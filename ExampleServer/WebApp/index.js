@@ -29,11 +29,11 @@ function postTest() {
         url: 'testurl',
         type: 'POST',
         contentType: 'text/plain; charset=utf-8',
-        data: 'data fra test post',
+        data: "Text from the index.js file",
         complete: function (xhr) {
             switch (xhr.status) {
                 case 200:
-                    console.log(xhr);
+                    console.log(xhr.responseText);
                 default:
                     console.log("Status post " + xhr.status);
                     break;

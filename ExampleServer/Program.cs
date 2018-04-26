@@ -20,9 +20,10 @@ namespace ExampleServer
 
             //test Post method
             server.Post("testurl", (req, res) => {
-                res.Send("post from test url");
+                res.Send($"post from test url, {req.BodyAsString()}");
             });
 
+            //test sending JSON object
             server.Get("jsonobject", (req, res) =>
              {
                  res.Send("{ \"name\":\"Jone\", \"age\":39, \"car\":null }");

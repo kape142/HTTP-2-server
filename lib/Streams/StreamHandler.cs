@@ -173,6 +173,7 @@ namespace lib.Streams
                     {
                         // todo svar med protocol error
                     }
+                    GetIncommingStreams(frame.StreamIdentifier).Frames.Add(frame);
                     if (frame.FlagEndStream)
                     {
                         EndOfStream(frame.StreamIdentifier);
