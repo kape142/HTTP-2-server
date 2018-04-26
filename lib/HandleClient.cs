@@ -49,7 +49,7 @@ namespace lib
             get
             {
                 _currentStreamIdPromise += _currentStreamIdPromise + 2;
-                return _currentStreamIdPromise; // todo thred safe?
+                return _currentStreamIdPromise; // todo thread safe
             }
         }
 
@@ -62,8 +62,8 @@ namespace lib
                 if(_useSsl)
                 {
                     _sslStream = new SslStream(tcpClient.GetStream(), false, App_CertificateValidation);
-                    _sslStream.ReadTimeout = 100;
-                    _sslStream.WriteTimeout = 100;
+                    _sslStream.ReadTimeout = 10000;
+                    //_sslStream.WriteTimeout = 100;
                     SslServerAuthenticationOptions options = new SslServerAuthenticationOptions();
                     options.ApplicationProtocols = new List<SslApplicationProtocol>()
                     {
@@ -112,6 +112,7 @@ namespace lib
             try
             {
                 Console.WriteLine("Handle Client closing...");
+                Connected = false;
                 if(_sslStream != null) _sslStream.Dispose();
                 if(_http1Reader != null) _http1Reader.Dispose();
                 if(_http1Writer != null) _http1Writer.Dispose();
@@ -120,6 +121,7 @@ namespace lib
                 if(_streamHandler != null) _streamHandler.Close();
                 _streamHandler = null;
                 hpackEncoder = null;
+                _tcpClient.Close();
             }
             catch (Exception)
             {
@@ -130,8 +132,7 @@ namespace lib
         {
             try
             {
-                Console.WriteLine("Send frame: ");
-                Console.WriteLine(frame.ToString());
+                if(frame.Type != HTTP2Frame.DATA) Console.WriteLine("Send frame: " + frame.ToString());
                 if (_useSsl)
                 {
                     await _sslWriter.FlushAsync();
@@ -200,9 +201,9 @@ namespace lib
                          await ReadStreamToString((msg) => {
                             // a request has ben recived
                             HTTP1Request req = new HTTP1Request(msg);
-                             Console.WriteLine(req.ToString());
+                            Console.WriteLine(req.ToString());
                             HTTP1Response res = HTTP1Response.From(req);
-                             Console.WriteLine(res.ToString());
+                            Console.WriteLine(res.ToString());
                             Task.Run(() => WriteResponse(res));
                              // todo vent på preface
                              if (req.IsUpgradeTo2) // || req.HeaderLines.Contains(new KeyValuePair<string, string>("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36")))
@@ -297,10 +298,7 @@ namespace lib
                 else numberOfBytesRead = await _http2Reader.ReadAsync(myReadBuffer, 0, myReadBuffer.Length);
             } catch(Exception ex)
             {
-            }
-            if(numberOfBytesRead > 0 && numberOfBytesRead < 3)
-            {
-                int ffff = 0;
+                Console.WriteLine(ex);
             }
 
             if (numberOfBytesRead == 3)
@@ -330,16 +328,7 @@ namespace lib
             }
             
         }
-        //private async Task<int> binaryReaderReadSync(byte[] buffer)
-        //{
-        //    int nr = 0;
-        //    lock (_binaryreaderlock)
-        //    {
-        //        nr = _sslReader.Read(buffer, 0, buffer.Length);
-        //
-        //    }
-        //    return nr;
-        //}
+
         private async Task<string> streamReaderReadLineSync()
         {
             lock (_streamreaderlock)
