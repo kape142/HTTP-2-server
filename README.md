@@ -53,8 +53,6 @@ server.listen(443);
 
 
 
-
-
 ## Running the tests
 
 Tests for this library is placed in its own project, UnitTesing.csproj. To run our tests you can open the solution in in Visual Studio 2017 and eighter;
