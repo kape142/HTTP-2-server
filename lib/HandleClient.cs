@@ -49,7 +49,7 @@ namespace lib
             get
             {
                 _currentStreamIdPromise += _currentStreamIdPromise + 2;
-                return _currentStreamIdPromise; // todo thred safe?
+                return _currentStreamIdPromise; // todo thread safe
             }
         }
 
@@ -62,8 +62,8 @@ namespace lib
                 if(_useSsl)
                 {
                     _sslStream = new SslStream(tcpClient.GetStream(), false, App_CertificateValidation);
-                    _sslStream.ReadTimeout = 100;
-                    _sslStream.WriteTimeout = 100;
+                    _sslStream.ReadTimeout = 10000;
+                    //_sslStream.WriteTimeout = 100;
                     SslServerAuthenticationOptions options = new SslServerAuthenticationOptions();
                     options.ApplicationProtocols = new List<SslApplicationProtocol>()
                     {
@@ -112,6 +112,7 @@ namespace lib
             try
             {
                 Console.WriteLine("Handle Client closing...");
+                Connected = false;
                 if(_sslStream != null) _sslStream.Dispose();
                 if(_http1Reader != null) _http1Reader.Dispose();
                 if(_http1Writer != null) _http1Writer.Dispose();
@@ -120,6 +121,7 @@ namespace lib
                 if(_streamHandler != null) _streamHandler.Close();
                 _streamHandler = null;
                 hpackEncoder = null;
+                _tcpClient.Close();
             }
             catch (Exception)
             {
@@ -130,8 +132,12 @@ namespace lib
         {
             try
             {
-                Console.WriteLine("Send frame: ");
-                Console.WriteLine(frame.ToString());
+                StringBuilder s = new StringBuilder();
+                s.AppendLine("---------------");
+                s.AppendLine("Send frame: ");
+                s.AppendLine(frame.ToString());
+                s.AppendLine("---------------");
+                Console.WriteLine(s);
                 if (_useSsl)
                 {
                     await _sslWriter.FlushAsync();
@@ -181,9 +187,9 @@ namespace lib
                 _http1Writer.Flush();
             }
         }
-        private bool IsPreface(byte[] data)
+        private bool IsPreface(byte[] data, int length = 24)
         {
-            for (int i = 0; i < _http2ConnectionPreface.Length; i++)
+            for (int i = 0; i < length; i++)
             {
                 if (_http2ConnectionPreface[i] != data[i]) return false;
             }
@@ -200,9 +206,9 @@ namespace lib
                          await ReadStreamToString((msg) => {
                             // a request has ben recived
                             HTTP1Request req = new HTTP1Request(msg);
-                             Console.WriteLine(req.ToString());
+                            Console.WriteLine(req.ToString());
                             HTTP1Response res = HTTP1Response.From(req);
-                             Console.WriteLine(res.ToString());
+                            Console.WriteLine(res.ToString());
                             Task.Run(() => WriteResponse(res));
                              // todo vent på preface
                              if (req.IsUpgradeTo2) // || req.HeaderLines.Contains(new KeyValuePair<string, string>("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36")))
@@ -218,25 +224,36 @@ namespace lib
                     else
                     {
                         await ReadStreamToFrameBytes((framedata) => {
+                            StringBuilder s = new StringBuilder();
+                            s.AppendLine("-----------------------");
+                            foreach (byte b in framedata)
+                                s.Append($"{b} ");
+                            
                             // sjekk om preface eller ramme
                             if (IsPreface(framedata))
                             {
                                 Console.WriteLine("Connectionpreface recived");
                                 _streamHandler.SendFrame(new HTTP2Frame(0).AddSettingsPayload(new(ushort, uint)[0], false));
+                                if (framedata.Length > _http2ConnectionPreface.Length)
+                                    framedata = Bytes.GetPartOfByteArray(_http2ConnectionPreface.Length, framedata.Length, framedata);
+                                else
+                                {
+                                    Console.WriteLine(s);
+                                    return;
+                                }
+                            }
+                            HTTP2Frame frame = new HTTP2Frame(framedata);
+                            if (_streamHandler.IncomingStreamExist(frame.StreamIdentifier))
+                            {
+                                _streamHandler.AddIncomingFrame(frame);
                             }
                             else
                             {
-                                HTTP2Frame frame = new HTTP2Frame(framedata);
-                                if (_streamHandler.IncomingStreamExist(frame.StreamIdentifier))
-                                {
-                                    _streamHandler.AddIncomingFrame(frame);
-                                }
-                                else
-                                {
-                                    _streamHandler.AddStreamToIncomming(new HTTP2Stream((uint)frame.StreamIdentifier, StreamState.Open));
-                                    _streamHandler.AddIncomingFrame(frame);
-                                }
+                                _streamHandler.AddStreamToIncomming(new HTTP2Stream((uint)frame.StreamIdentifier, StreamState.Open));
+                                _streamHandler.AddIncomingFrame(frame);
                             }
+                            s.AppendLine("\n-----------------------");
+                            Console.WriteLine(s);
                         }, () => {
                             Thread.Sleep(100);
                         });
@@ -288,6 +305,7 @@ namespace lib
         }
         private async Task ReadStreamToFrameBytes(Action<byte[]> framedata, Action onEmptyFrame)
         {
+
             byte[] myReadBuffer = new byte[3];
             int numberOfBytesRead = 0;
             // todo: make thread safe
@@ -297,28 +315,22 @@ namespace lib
                 else numberOfBytesRead = await _http2Reader.ReadAsync(myReadBuffer, 0, myReadBuffer.Length);
             } catch(Exception ex)
             {
-            }
-            if(numberOfBytesRead > 0 && numberOfBytesRead < 3)
-            {
-                int ffff = 0;
+                Console.WriteLine(ex);
             }
 
             if (numberOfBytesRead == 3)
             {
-                bool littleEndian = BitConverter.IsLittleEndian;
-                byte[] source = myReadBuffer;
-                byte[] target = new byte[4];
-                for (int i = 0; i < 3; i++)
+                int length = 0;
+                if (IsPreface(myReadBuffer, 3))
+                    length = 24;
+                else
                 {
-                    int j = littleEndian ? 0 : 3;
-                    target[j] = source[i];
-                    j += littleEndian ? 1 : -1;
+                    length = Bytes.ConvertFromIncompleteByteArray(myReadBuffer) + 9;
                 }
-                int length = BitConverter.ToInt32(target, 0) + 9;
                 byte[] data = new byte[length];
-                data[0] = source[0];
-                data[1] = source[1];
-                data[2] = source[2];
+                data[0] = myReadBuffer[0];
+                data[1] = myReadBuffer[1];
+                data[2] = myReadBuffer[2];
                 // todo: make thread safe
                 if(_useSsl) await _sslReader.ReadAsync(data, 3, length - 3);
                 else await _http2Reader.ReadAsync(data, 3, length - 3);
@@ -330,16 +342,7 @@ namespace lib
             }
             
         }
-        //private async Task<int> binaryReaderReadSync(byte[] buffer)
-        //{
-        //    int nr = 0;
-        //    lock (_binaryreaderlock)
-        //    {
-        //        nr = _sslReader.Read(buffer, 0, buffer.Length);
-        //
-        //    }
-        //    return nr;
-        //}
+
         private async Task<string> streamReaderReadLineSync()
         {
             lock (_streamreaderlock)

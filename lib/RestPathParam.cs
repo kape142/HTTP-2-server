@@ -50,7 +50,7 @@ namespace lib
             string[] path = URI.Split("/");
             int length = path.Length;
             string[] keyPath = this.URI.Split("/");
-            if (HTTPMethods[length - 1] == null || !HTTPMethods[length - 1].ContainsKey(method))
+            if (length > HTTPMethods.Length || HTTPMethods[length - 1] == null || !HTTPMethods[length - 1].ContainsKey(method))
                 return false;
             else
                 return true;

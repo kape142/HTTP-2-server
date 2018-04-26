@@ -15,7 +15,7 @@ function getTest() {
         complete: function (xhr) {
             switch (xhr.status) {
                 case 200:
-                    console.log("Succsess");
+                    console.log(xhr.responseText);
                 default:
                     console.log("Status get " + xhr.status);
                     break;
@@ -33,7 +33,7 @@ function postTest() {
         complete: function (xhr) {
             switch (xhr.status) {
                 case 200:
-                    console.log("Succsess");
+                    console.log(xhr);
                 default:
                     console.log("Status post " + xhr.status);
                     break;

@@ -4,31 +4,65 @@ An implementation of the [HTTP/2 protocol](https://tools.ietf.org/html/rfc7540) 
 
 ## Getting Started
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See usage for notes on how to use the library in your system.
 
 ### Prerequisites
 
 To run a server based on this library you must have [.NET Core Runtime 2.1-Preview2](https://github.com/dotnet/core/blob/master/release-notes/download-archives/2.1.0-preview2-download.md) installed, as this is, as of today, the only version of .NET Core supporting SSL connection with ALPN negotiation.
 
+As this library runs on a preview of the latest .NET Core, there is no support for continuous integartion.
 
 
 ### Installing
 
-A step by step series of examples that tell you have to get a development env running
+Clone soulution of of Github. 
 
-Create an instance of the Server
 
+## Usage
+### Server
+#### Contructors
+|Name|Description|
+|---------|---------|
+|```Server()```|Initializes a new instance of the Server class that finds a local IP and sets certificat to default = null.|
+|```Server(String)```|Initializes a new instance of the Server class and sets the specific IP. Certificat is set to default = null.|
+|```Server(X509Certificate2)```|Initializes a new instance of the Server class, finds a local IP and sets certificat to the specified X509Certificate2.|
+|```Server(String,X509Certificate2)```|Initializes a new instance of the Server class, sets specified IP and sets certificat to the specified X509Certificate2.|
+
+#### Properties
+|Name|Description|
+|---------|---------|
+|```Port```|Returns the port the server is listening to.|
+
+#### Methods
+|Name|Description|
+|---------|---------|
+|```Listen(int)```|Starts listening to given port.|
+|```Get(string, RestURI.HTTPMethod)```|Returns the data from given url.|
+|```Post(string, RestURI.HTTPMethod)```|Posts data to given url.|
+
+#### Example
 ```cs
-var serverCertificate = new X509Certificate2("Certificate/TcpTLSServer_TemporaryKey.pfx", "1234");
-Server server = new Server(serverCertificate);
+using System;
+using System.Security.Cryptography.X509Certificates;
+using lib;
+
+namespace Example
+{
+    class ExampleServer
+    {
+        static void Main(string[] args)
+        {
+            //Creating the certificate
+            var serverCertificate = new X509Certificate2("Certificate/TcpTLSServer_TemporaryKey.pfx", "1234");
+            //Creating the server
+            Server server = new Server( serverCertificate); // serverCertificate);
+            //Server starts listening to port, and responding to webpage.
+            server.Listen(443);
+        }
+    }
+}
 ```
 
-Have server start listening
-
-```cs
-//parameter is the port you wish to listen to
-server.listen(443);
-```
 
 ## Running the tests
 
@@ -152,12 +186,6 @@ Assert.True(RestLibrary.HasMethod("GET", "shoppinglists"));
 
 ```
 
-
-## Deployment
-
-Add additional notes about how to deploy this on a live system
-
-
 ## Implementations
 
 ### Establshing a connection over HTTP/2
@@ -170,7 +198,7 @@ Add additional notes about how to deploy this on a live system
 * Header Compression and Decompression (from NuGet), ref [RFC7540 Section 4.3](https://tools.ietf.org/html/rfc7540#section-4.3)
 
 #### Frame Definitions [RFC7540 Section 6](https://tools.ietf.org/html/rfc7540#section-6)
-All.
+* All.
 
 ### Multiplexing and Streams
 
@@ -179,10 +207,15 @@ All.
 * Stream Dependencies, ref [RFC7540 Section 5.3.1](https://tools.ietf.org/html/rfc7540#section-5.3.1)
 
 ### HTTP Message Exchange
-* Server Push [RFC7540 Section 8.2](https://tools.ietf.org/html/rfc7540#section-8.2)
+* Server Push (Depending on Push_Promise)[RFC7540 Section 8.2](https://tools.ietf.org/html/rfc7540#section-8.2)
+
+### Other implementations
+* REST-services
+* GZip encoding (might be a bit bugged).
+* ...
 
 ## Limitations and further development
-
+* Find out why Push_Promise doesn't work.
 * Further implementations of Stream states, and dependency weighting.
 * Error handeling
 * Research why some browsers cooperate with our example server better than others.
@@ -190,7 +223,6 @@ All.
 * Further work on flowcontroll and recieving data from client.
 * Further debugging
 * Write more testes (e.g. end to end tests)
-* Implement continuous integration for project.
 * Create a better testing enviorment. 
 
 ## Built With

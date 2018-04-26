@@ -28,7 +28,6 @@ namespace lib
         }
         public Server(X509Certificate2 certificate = null)
         {
-            //registerdActionsOnUrls = new Dictionary<string, Action<object, object>>();
             IpAddress = GetLocalIPAddress();
             Certificate = certificate;
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
@@ -69,26 +68,16 @@ namespace lib
             }
         }
 
-        public void Get(string url, RestURI.HTTPMethod action)
+        public void Get(string uri, RestURI.HTTPMethod action)
         {
-            RestURI.RestLibrary.AddURI("GET", url, action);
+            RestURI.RestLibrary.AddURI("GET", uri, action);
         }
 
-        public void Post(string url, RestURI.HTTPMethod action)
+        public void Post(string uri, RestURI.HTTPMethod action)
         {
-            RestURI.RestLibrary.AddURI("POST", url, action);
+            RestURI.RestLibrary.AddURI("POST", uri, action);
         }
 
-        //private void Clean()
-        //{
-        //    while (cleanupThreadRunning)
-        //    {
-        //        var disconnectedClients = clients.FindAll(x => !x.Connected);
-        //        disconnectedClients.ForEach(y => y.Close());
-        //        clients.RemoveAll(u => !u.Connected);
-        //        Thread.Sleep(5000);
-        //    }
-        //}
         public static string GetLocalIPAddress()
         {
             var host = Dns.GetHostEntry(Dns.GetHostName());
@@ -100,30 +89,6 @@ namespace lib
                 }
             }
             throw new Exception("No network adapters with an IPv4 address in the system!");
-        }
-
-
-        public static void testFrame(){
-            var fc = new HTTP2Frame(128).AddHeaderPayload(new byte[6], 16,0x8,true, 0x2, true, false);
-            byte[] bytes = fc.GetBytes();
-            foreach(byte b in bytes)
-                Console.WriteLine(Convert.ToString(b, 2).PadLeft(8, '0'));
-
-            /*Console.WriteLine(fc.ToString());
-            fc.AddSettingsPayload(new Tuple<short, int>[] {new Tuple<short,int>(HTTP2Frame.MaxFrameSize,128) });
-            var by = fc.GetBytes();
-            foreach (byte b in by)
-                Console.Write($"{b} ");
-            Console.WriteLine();
-            Console.WriteLine(fc.ToString());*/
-        }
-
-        public static void testRestURI()
-        {
-            RestURI.RestLibrary.AddURI("GET", "shoppinglists/favourite/:householdid/username/shoppinglistid",(req,res) => {
-                res.Send($"HouseholdID: {req.Params["householdid"]}, username: {req.Params["username"]}, shoppinglistid: {req.Params["shoppinglistid"]}");
-            });
-            RestURI.RestLibrary.AddURI("GET", "shoppinglists/favourite/:householdid/", (req, res) => Console.Write("2"));
         }
     }
 }

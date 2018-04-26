@@ -184,7 +184,14 @@ namespace lib.HTTPObjects
         public HTTP2Frame(byte[] byteArray)
         {
             this.byteArray = byteArray;
+            if(FrameLength != PayloadLength + 9)
+            {
+                throw new ArgumentException("Frame data is invalid");
+            }
+
         }
+
+
         public HTTP2Frame(int streamIdentifier)
         {
             var array = new byte[headerSize];
