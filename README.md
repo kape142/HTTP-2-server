@@ -244,4 +244,5 @@ See also the list of [contributors](https://github.com/kape142/HTTP-2-server/gra
 ## Acknowledgments
 
 * A thanks to [Matthias247](https://github.com/Matthias247/) whose hpack implementation we used in this project to compress headers.
+* A thanks to [samuelneff](https://github.com/samuelneff) whose Mime type mapping we used in this project.
 
