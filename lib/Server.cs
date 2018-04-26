@@ -45,6 +45,13 @@ namespace lib
             Certificate = certificate;
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
         }
+        public Server(X509Certificate2 certificate = null)
+        {
+            registerdActionsOnUrls = new Dictionary<string, Action<object, object>>();
+            IpAddress = GetLocalIPAddress();
+            Certificate = certificate;
+            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+        }
 
 
         public void Listen(int port)
@@ -121,6 +128,18 @@ namespace lib
         //        Thread.Sleep(5000);
         //    }
         //}
+        public static string GetLocalIPAddress()
+        {
+            var host = Dns.GetHostEntry(Dns.GetHostName());
+            foreach (var ip in host.AddressList)
+            {
+                if (ip.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    return ip.ToString();
+                }
+            }
+            throw new Exception("No network adapters with an IPv4 address in the system!");
+        }
 
 
         public static void testFrame(){
