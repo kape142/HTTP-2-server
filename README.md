@@ -10,24 +10,13 @@ These instructions will get you a copy of the project up and running on your loc
 
 To run a server based on this library you must have [.NET Core Runtime 2.1-Preview2](https://github.com/dotnet/core/blob/master/release-notes/download-archives/2.1.0-preview2-download.md) installed, as this is, as of today, the only version of .NET Core supporting SSL connection with ALPN negotiation.
 
+As this library runs on a preview of the latest .NET Core, there is no support for continuous integartion.
+
 
 ### Installing
 
-A step by step series of examples that tell you have to get a development env running
+Clone soulution of of Github. 
 
-Create an instance of the Server
-
-```cs
-var serverCertificate = new X509Certificate2("Certificate/TcpTLSServer_TemporaryKey.pfx", "1234");
-Server server = new Server(serverCertificate);
-```
-
-Have server start listening
-
-```cs
-//parameter is the port you wish to listen to
-server.listen(443);
-```
 
 ## Usage
 ### Server
@@ -51,6 +40,28 @@ server.listen(443);
 |```Get(string, RestURI.HTTPMethod)```|Returns the data from given url.|
 |```Post(string, RestURI.HTTPMethod)```|Posts data to given url.|
 
+#### Example
+```cs
+using System;
+using System.Security.Cryptography.X509Certificates;
+using lib;
+
+namespace Example
+{
+    class ExampleServer
+    {
+        static void Main(string[] args)
+        {
+            //Creating the certificate
+            var serverCertificate = new X509Certificate2("Certificate/TcpTLSServer_TemporaryKey.pfx", "1234");
+            //Creating the server
+            Server server = new Server( serverCertificate); // serverCertificate);
+            //Server starts listening to port, and responding to webpage.
+            server.Listen(443);
+        }
+    }
+}
+```
 
 
 ## Running the tests
@@ -212,7 +223,6 @@ Assert.True(RestLibrary.HasMethod("GET", "shoppinglists"));
 * Further work on flowcontroll and recieving data from client.
 * Further debugging
 * Write more testes (e.g. end to end tests)
-* Implement continuous integration for project.
 * Create a better testing enviorment. 
 
 ## Built With
