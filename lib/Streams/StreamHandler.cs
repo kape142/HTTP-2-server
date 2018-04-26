@@ -173,6 +173,11 @@ namespace lib.Streams
                     {
                         // todo svar med protocol error
                     }
+                    if (frame.FlagEndStream)
+                    {
+                        EndOfStream(frame.StreamIdentifier);
+                        break;
+                    }
                     DataPayload dp = frame.GetDataPayloadDecoded();
                     if (dp.Data != null) s.AppendLine(Encoding.ASCII.GetString(dp.Data));
                     break;

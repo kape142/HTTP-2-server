@@ -43,6 +43,10 @@ namespace ExampleServer
                 res.Send("post fra test url");
             });
 
+            server.Get("jsonobject", (req, res) =>
+             {
+                 res.Send("{ \"name\":\"Jone\", \"age\":39, \"car\":null }");
+             });
             /*
             server.Get("/testurl", (req, res) =>
             {
