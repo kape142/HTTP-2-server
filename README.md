@@ -8,9 +8,9 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Prerequisites
 
-To run a server based on this library you must have [.NET Core Runtime 2.1-Preview2](https://github.com/dotnet/core/blob/master/release-notes/download-archives/2.1.0-preview2-download.md) installed, as this is, as of today, the only version of .NET Core supporting SSL connection with ALPN negotiation.
+To run a server based on this library you must have [.NET Core Runtime 2.1-Preview2](https://github.com/dotnet/core/blob/master/release-notes/download-archives/2.1.0-preview2-download.md) installed, as this is, per today, the only version of .NET Core supporting SSL connection with ALPN negotiation.
 
-As this library runs on a preview of the latest .NET Core, there is no support for continuous integartion.
+As this library runs on a preview of the latest .NET Core, we do not have any continuous integartion.
 
 
 ### Installing
@@ -66,7 +66,7 @@ namespace Example
 
 ## Running the tests
 
-Tests for this library is placed in its own project, UnitTesting.csproj. To run our tests you can open the solution in in Visual Studio 2017 and eighter;
+Tests for this library are placed in its own project, UnitTesting.csproj. To run our tests you can open the solution in in Visual Studio 2017 and either;
 * Ctrl+R,A
 * press "Test", "Run", "All Tests". As shown  
 ![Where to find test](https://image.ibb.co/gZjKTc/TestVS.png)
@@ -83,7 +83,7 @@ Http2.Hpack.Encoder encoder = new Http2.Hpack.Encoder();
 Http2.Hpack.Encoder.Result encodeResult = encoder.EncodeInto(headerBlockFragment, headers);
 Http2.Hpack.DecoderExtensions.DecodeFragmentResult decodeResult = decoder.DecodeHeaderBlockFragment(new ArraySegment<byte>(buffer, 0, buffer.Length), maxHeaderFieldsSize, headers);
 ```
-TestAddSettingsPayload(), adds settingspayload to a frame and then reads it out.
+TestAddSettingsPayload(), adds settings payload to a frame and then reads it out.
 ```cs
 var settings = new(ushort, uint)[] { (SETTINGS_INITIAL_WINDOW_SIZE, 0x1000), (SETTINGS_ENABLE_PUSH, 0x0) };
 ...
@@ -116,7 +116,7 @@ Assert.Equal(ExtractBytes(data), dp.Data);
 Assert.Equal(0, dp.PadLength);
 ```
 
-TestSplit32BitToBoolAnd31bitInt(), seperates the first bit from different integers.
+TestSplit32BitToBoolAnd31bitInt(), seperates the first bit from an integer.
 ```cs
 uint _uint = 0b10000000000000000000000000000000;
 int test = (int)(_uint | 0b01111000000000000000000000000000); // 1 and 2013265920
@@ -127,7 +127,7 @@ Assert.True(2013265920 == t.int31);
 ...
 ```
 
-TestExtractBytes(), converts a long, a int and a short into byte arrays.
+TestExtractBytes(), converts a long, an int or a short into byte arrays.
 ```cs
 ...
 short s = 12364;
@@ -136,7 +136,7 @@ Array.Reverse(b);
 Assert.Equal(BitConverter.ToInt16(b, 0),s);
 ```
 
-TestConvertFromIncompleteByteArray(), reverser a byte array and converts it back
+TestConvertFromIncompleteByteArray(), converts byte array of 1-4 bytes into an int
 ```cs
 int i = 1823423647;
 var b = BitConverter.GetBytes(i);
@@ -152,7 +152,7 @@ Array.Reverse(b);
 Assert.Equal(b, ConvertToByteArray(i));
 ```
 
-TestCombineHeaderPayloads(), combines the payloads from different headerframes to get the complete headerlist.
+TestCombineHeaderPayloads(), combines the payloads from a header frame and potentally the following continuations frames to get the complete headerlist.
 ```cs
 ...
 var continuation = new HTTP2Frame(28).AddContinuationFrame(continuationData, true);
@@ -176,7 +176,7 @@ TestHeaderPayload(), adds header payload to frame.
 HTTP2Frame frame = new HTTP2Frame(1).AddHeaderPayload(data, 2, true, true);
 HeaderPayload hh = frame.GetHeaderPayloadDecoded();
 ```
-TestRestURI(), adds several GET-methods to different URLs and and then checks if they are there.
+TestRestURI(), adds several HTTP-methods to different URLs and and then checks if they are there.
 ```cs
 ...
 RestLibrary.AddURI("GET", "shoppinglists/", (req, res) => res.Send("List of shoppinglists"));
@@ -204,25 +204,23 @@ Assert.True(RestLibrary.HasMethod("GET", "shoppinglists"));
 
 * Stream Identifiers, ref [RFC7540 Section 5.1.1](https://tools.ietf.org/html/rfc7540#section-5.1.1)
 * Stream Concurrency, ref [RFC7540 Section 5.1.2](https://tools.ietf.org/html/rfc7540#section-5.1.2)
-* Stream Dependencies, ref [RFC7540 Section 5.3.1](https://tools.ietf.org/html/rfc7540#section-5.3.1)
 
 ### HTTP Message Exchange
 * Server Push (Depending on Push_Promise)[RFC7540 Section 8.2](https://tools.ietf.org/html/rfc7540#section-8.2)
 
 ### Other implementations
 * REST-services
-* GZip encoding (might be a bit bugged).
+* GZip encoding.
 * ...
 
 ## Limitations and further development
 * Find out why Push_Promise doesn't work.
 * Further implementations of Stream states, and dependency weighting.
-* Error handeling
-* Research why some browsers cooperate with our example server better than others.
+* Error handling
 * Cleanup classes
-* Further work on flowcontroll and recieving data from client.
+* Further work on flow control and recieving data from client.
 * Further debugging
-* Write more testes (e.g. end to end tests)
+* Write more tests (e.g. end to end tests)
 * Create a better testing enviorment. 
 
 ## Built With
