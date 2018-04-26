@@ -28,7 +28,7 @@ namespace lib
         }
         public Server(X509Certificate2 certificate = null)
         {
-            registerdActionsOnUrls = new Dictionary<string, Action<object, object>>();
+            //registerdActionsOnUrls = new Dictionary<string, Action<object, object>>();
             IpAddress = GetLocalIPAddress();
             Certificate = certificate;
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;

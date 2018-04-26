@@ -251,6 +251,7 @@ namespace lib.Streams
             string path = lstheaders.Find(x => x.Name == ":path").Value;
             string contentType = lstheaders.Find(x => x.Name == ":content-type").Value;
             string accept = lstheaders.Find(x => x.Name == ":accept").Value;
+            string encoding = lstheaders.Find(x => x.Name == "accept-encoding").Value;
 
             if (false)
             {
@@ -302,7 +303,7 @@ namespace lib.Streams
                 //}
                 //Console.WriteLine("Push promise >>>>>>>>>>>>>>>>>>>>");
             }
-            HTTP2RequestGenerator.SendFile(this, streamID, file);
+            HTTP2RequestGenerator.SendFile(this, streamID, file,encoding);
 
         }
 

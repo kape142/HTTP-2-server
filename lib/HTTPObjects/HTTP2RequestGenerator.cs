@@ -29,14 +29,14 @@ namespace lib.HTTPObjects
                 new HeaderField{ Name = "content-type", Value = Mapping.MimeMap[fi.Extension], Sensitive = false },
             };
 
-            /*if (encoding.Contains("gzip"))
+            if (encoding.Contains("gzip"))
             {
                 fi = ZipStream.Compress(fi);
                 if (fi.Extension.Equals(".gz"))
                 {
                     headers.Add(new HeaderField { Name = "Content-Encoding", Value = "gzip", Sensitive = false });
                 }
-            }*/
+            }
             byte[] commpresedHeaders = new byte[Server.MAX_HTTP2_FRAME_SIZE];
             // Encode a header block fragment into the output buffer
             var headerBlockFragment = new ArraySegment<byte>(commpresedHeaders);
@@ -104,7 +104,7 @@ namespace lib.HTTPObjects
             return true;
         }
 
-        public static void SendFileWithPushPromise(StreamHandler streamHandler, int streamId, string url)
+        public static void SendFileWithPushPromise(StreamHandler streamHandler, int streamId, string url,string encoding)
         {
             FileInfo fi = new FileInfo(url);
             if (!fi.Exists)
@@ -118,7 +118,7 @@ namespace lib.HTTPObjects
                 new HeaderField{ Name = ":authority", Value = Server.IpAddress, Sensitive = false },
                 new HeaderField{ Name = ":method", Value = Server.IpAddress, Sensitive = false },
             };
-            /*
+            
             if (encoding.Contains("gzip"))
             {
                 fi = ZipStream.Compress(fi);
@@ -126,7 +126,7 @@ namespace lib.HTTPObjects
                 {
                     headers.Add(new HeaderField { Name = "Content-Encoding", Value = "gzip", Sensitive = false });
                 }
-            }*/
+            }
             byte[] commpresedHeaders = new byte[HTTP2Frame.SETTINGS_MAX_FRAME_SIZE];
             // Encode a header block fragment into the output buffer
             var headerBlockFragment = new ArraySegment<byte>(commpresedHeaders);
