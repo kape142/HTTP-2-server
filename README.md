@@ -32,7 +32,7 @@ server.listen(443);
 ## Usage
 ### Server
 #### Contructors
-|Name|description|
+|Name|Description|
 |---------|---------|
 |```Server()```|Initializes a new instance of the Server class that finds a local IP and sets certificat to default = null.|
 |```Server(String)```|Initializes a new instance of the Server class and sets the specific IP. Certificat is set to default = null.|
@@ -40,12 +40,12 @@ server.listen(443);
 |```Server(String,X509Certificate2)```|Initializes a new instance of the Server class, sets specified IP and sets certificat to the specified X509Certificate2.|
 
 #### Properties
-|Name|description|
+|Name|Description|
 |---------|---------|
 |```Port```|Returns the port the server is listening to.|
 
 #### Methods
-|Name|description|
+|Name|Description|
 |---------|---------|
 |```Listen(int)```|Starts listening to given port.|
 |```Get(string, RestURI.HTTPMethod)```|Returns the data from given url.|
