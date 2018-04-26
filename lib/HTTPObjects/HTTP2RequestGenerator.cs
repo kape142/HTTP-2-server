@@ -16,7 +16,7 @@ namespace lib.HTTPObjects
         public static readonly HeaderField HEADER_METHODNOTALLOWED = new HeaderField{Name = ":status", Value = "405", Sensitive = false };
         public static readonly HeaderField HEADER_INTERNALSERVERERROR = new HeaderField{Name = ":status", Value = "500", Sensitive = false };
 
-        public static void SendFile(StreamHandler streamHandler, int streamId, string url,string encoding)
+        public static void SendFile(StreamHandler streamHandler, int streamId, string url, string encoding ="")
         {
             FileInfo fi = new FileInfo(url);
             if (!fi.Exists)
@@ -73,7 +73,7 @@ namespace lib.HTTPObjects
             }
         }
 
-        public static bool SendPushPromise(StreamHandler streamHandler, int streamIdToSendPriseFrameOn, string url, int streamIdToPromise)
+        public static bool SendPushPromise(StreamHandler streamHandler, int streamIdToSendPriseFrameOn, string url, int streamIdToPromise, string file)
         {
             FileInfo fi = new FileInfo(url);
             if (!fi.Exists)
@@ -82,9 +82,9 @@ namespace lib.HTTPObjects
             }
             List<HeaderField> headers = new List<HeaderField>(){
                 //HEADER_OK,
-                new HeaderField{ Name = "content-type", Value = Mapping.MimeMap[fi.Extension], Sensitive = false },
+                new HeaderField{ Name = ":url", Value = file, Sensitive = false },
+                //new HeaderField{ Name = "content-type", Value = Mapping.MimeMap[fi.Extension], Sensitive = false },
                 new HeaderField{ Name = ":authority", Value = Server.IpAddress, Sensitive = false },
-                //new HeaderField{ Name = ":method", Value = Server.IpAddress, Sensitive = false },
             };
             byte[] commpresedHeaders = new byte[Server.MAX_HTTP2_FRAME_SIZE];
             // Encode a header block fragment into the output buffer

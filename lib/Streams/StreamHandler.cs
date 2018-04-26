@@ -54,11 +54,25 @@ namespace lib.Streams
             }
         }
 
+        internal void SendFrameImmmediate(HTTP2Frame frame)
+        {
+            Task.Run(() => owner.WriteFrame(frame));
+        }
         internal void SendFrame(HTTP2Frame frame)
         {
+            if (OutgoingStreams.Find(x => x.Id == frame.StreamIdentifier)?.State == StreamState.Closed) return;
+            if (IncomingStreams.Find(x => x.Id == frame.StreamIdentifier)?.State == StreamState.Closed) return;
             lock (lockFramesToSend)
             {
                 framesToSend.Enqueue(frame);
+            }
+        }
+
+        private void CancelSending()
+        {
+            lock (lockFramesToSend)
+            {
+                framesToSend.Clear();
             }
         }
 
@@ -198,7 +212,7 @@ namespace lib.Streams
                     Console.WriteLine("PING frame recived\n" + frame.ToString());
                     if (!frame.FlagAck)
                     {
-                        SendFrame(new HTTP2Frame(frame.StreamIdentifier).AddPingPayload(frame.Payload));
+                        SendFrameImmmediate(new HTTP2Frame(frame.StreamIdentifier).AddPingPayload(frame.Payload, true));
                     }
                     break;
                 case HTTP2Frame.GOAWAY:
@@ -240,7 +254,11 @@ namespace lib.Streams
             Http2.Hpack.DecoderExtensions.DecodeFragmentResult dencodeResult = owner.hpackDecoder.DecodeHeaderBlockFragment(headerBlockFragment, (uint)HTTP2Frame.MaxFrameSize, lstheaders); // todo max header size
             if(dencodeResult.Status != DecoderExtensions.DecodeStatus.Success)
             {
+                CancelSending();
                 Console.WriteLine("Decompress errror: " + dencodeResult.Status);
+                SendFrame(new HTTP2Frame(0).AddGoawayPayload(streamID, HTTP2Frame.COMPRESSION_ERROR, Encoding.ASCII.GetBytes("Decompress errror on serverside: " + dencodeResult.Status)));
+                Thread.Sleep(1000);
+                owner.Close();
                 return;
             }
             foreach (var item in lstheaders)
@@ -288,19 +306,6 @@ namespace lib.Streams
             else
             {
                 file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\" + path;
-            }
-            if (file.Contains("about.html"))
-            {
-                //int promiseId = owner.NextStreamId;
-                //string promiseFile = Environment.CurrentDirectory + "\\" + Server.DIR + "\\Capture2.jpg";
-                //Console.WriteLine($"Push promise <<<<<<<<<<<<<<<<<<< on stream: {streamID} for stream: {promiseId} file: {file}");
-                //if(HTTP2RequestGenerator.SendPushPromise(this, streamID, promiseFile, promiseId))
-                //{
-                //    Thread.Sleep(1000);
-                //    //Console.WriteLine("Sending file on promise: " + promiseId);
-                //    //HTTP2RequestGenerator.SendFile(this, promiseId, promiseFile);
-                //}
-                //Console.WriteLine("Push promise >>>>>>>>>>>>>>>>>>>>");
             }
             HTTP2RequestGenerator.SendFile(this, streamID, file);
 
