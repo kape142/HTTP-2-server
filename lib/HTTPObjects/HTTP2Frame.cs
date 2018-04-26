@@ -525,9 +525,9 @@ namespace lib.HTTPObjects
         {
             if (frames[0].Type != HEADERS)
                 throw new ArgumentException("Header must consist of 1 header frame and 0..* continuation frames. Frame #1 is not of type header");
-            for(int j = 1; j < frames.Length; j++)
-                if(frames[j].Type != CONTINUATION)
-                    throw new ArgumentException($"Header must consist of 1 header frame and 0..* continuation frames. frame #{j+1} is not of type continuation");
+            for (int j = 1; j < frames.Length; j++)
+                if (frames[j].Type != CONTINUATION)
+                    throw new ArgumentException($"Header must consist of 1 header frame and 0..* continuation frames. frame #{j + 1} is not of type continuation");
             List<byte> bytes = new List<byte>();
             byte headerFlags = frames[0].Flag;
             byte[] headerPayload = frames[0].Payload;

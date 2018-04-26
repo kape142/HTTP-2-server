@@ -25,25 +25,20 @@ namespace lib
             }
             if (next.Substring(0, 1).Equals(":"))
             {
-                PathParam.AddURI(method, NextPath(URI), callback);
+                PathParam.AddURI(method, URI.Substring(1), callback);
                 return;
             }
-            //if (path.Length > 1)
-            //{
-                if (SubURIs.ContainsKey(path[1]))
-                {
-                    RestURI subURI = SubURIs[path[1]];
-                    subURI.AddURI(method, NextPath(URI), callback);
-                }
-                else
-                {
-                    RestURI subURI = new RestURI(path[1]);
-                    subURI.AddURI(method, NextPath(URI), callback);
-                    SubURIs.Add(path[1], subURI);
-                }
-                return;
-            //}
-            throw new Exception("­I­ ­d­o­n­'­­­­­­t­­ ­­­t­­­h­­­i­­­n­­­k­­­­ ­­­t­­­h­­­i­­­s­­­ ­­­s­­­h­­­o­u­l­d­ ­­­h­­­­­a­p­­­­­­­­­­­­­­­­­­­p­e­n­­­­­­?­?­");  
+            if (SubURIs.ContainsKey(path[0]))
+            {
+                RestURI subURI = SubURIs[path[0]];
+                subURI.AddURI(method, NextPath(URI), callback);
+            }
+            else
+            {
+                RestURI subURI = new RestURI(path[0]);
+                subURI.AddURI(method, NextPath(URI), callback);
+                SubURIs.Add(path[0], subURI);
+            }
         }
 
         private RestURI(String URI)
@@ -51,19 +46,49 @@ namespace lib
             this.URI = URI;
         }
 
-        internal void Execute(string method, string URI, Request req, Response res)
+        internal void Execute(string method, string URI, Request req, IResponse res)
         {
             string[] path = URI.Split("/");
+            string next = path[0];
             if (URI != "")
             {
-                SubURIs[URI.Split("/")[0]].Execute(method, NextPath(URI), req, res);
-                return;
+                if (SubURIs.ContainsKey(next))
+                    SubURIs[next].Execute(method, NextPath(URI), req, res);
+                else
+                {
+                    if (PathParam.HasMethod(method, URI))
+                        PathParam.Execute(method, URI, req, res);
+                    else
+                        throw new ArgumentException("No such method");
+                }
             }
-            if (Methods.ContainsKey(method))
-                Methods[method].Invoke(req, res);
             else
-                PathParam.Execute(method, URI, req, res);
+            {
+                if (Methods.ContainsKey(method))
+                    Methods[method].Invoke(req, res);
+                else
+                    throw new ArgumentException("No such method");
+            }
+                
+        }
 
+        internal bool HasMethod(string method, string URI)
+        {
+            string[] path = URI.Split("/");
+            string next = path[0];
+            if (URI != "")
+            {
+                if (SubURIs.ContainsKey(next))
+                    return SubURIs[next].HasMethod(method, NextPath(URI));
+                else
+                {
+                    return PathParam.HasMethod(method, URI);
+                }
+            }
+            else
+            {
+                return Methods.ContainsKey(method);
+            }
         }
 
         private static string NextPath(string path)
