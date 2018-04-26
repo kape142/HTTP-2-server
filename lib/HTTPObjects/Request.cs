@@ -11,6 +11,8 @@ namespace lib.HTTPObjects
 
         public string ContentType{ get; private set; }
 
+        internal Request() { }
+
         internal Request(byte[] data, string contentType)
         {
             _data = data;

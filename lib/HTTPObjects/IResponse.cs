@@ -4,7 +4,7 @@ using System.Text;
 
 namespace lib.HTTPObjects
 {
-    interface IResponse
+    public interface IResponse
     {
         void Send(string data);
     }

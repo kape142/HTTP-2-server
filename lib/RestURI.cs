@@ -8,7 +8,7 @@ namespace lib
     public class RestURI
     {
         public static RestURI RestLibrary { get; } = new RestURI("");
-        public delegate void HTTPMethod(Request req, Response res);
+        public delegate void HTTPMethod(Request req, IResponse res);
         internal String URI { get; }
         private Dictionary<String, RestURI> SubURIs = new Dictionary<string, RestURI>();
         private Dictionary<String, HTTPMethod> Methods = new Dictionary<string, HTTPMethod>();

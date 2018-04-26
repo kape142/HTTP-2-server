@@ -5,7 +5,7 @@ using System.Text;
 
 namespace lib.HTTPObjects
 {
-    public class Response
+    public class Response : IResponse
     {
         private StreamHandler _streamHandler;
         private int _streamId;
