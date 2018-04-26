@@ -59,10 +59,6 @@ namespace lib
                     {
                         return DoUppgrade(req);
                     }
-                    if (false)//todo
-                    {
-                        return null;
-                    }
                     switch (req.Type)
                     {
                         case "HEAD":
