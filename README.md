@@ -86,6 +86,9 @@ All.
 * Cleanup classes
 * Implement continous integration for project.
 * Further work on flowcontroll and recieving data from client.
+* Further debugging
+* Write more testes
+* Create a better testing enviorment. 
 
 ## Built With
 
