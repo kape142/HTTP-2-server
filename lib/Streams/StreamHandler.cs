@@ -315,7 +315,7 @@ namespace lib.Streams
             {
                 file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\" + path;
             }
-            HTTP2RequestGenerator.SendFile(this, streamID, file);
+            HTTP2RequestGenerator.SendFile(this, streamID, file,encoding);
             s.AppendLine("--------------");
             Console.WriteLine(s);
         }
