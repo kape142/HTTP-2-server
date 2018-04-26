@@ -236,9 +236,13 @@ namespace lib.Streams
             byte[] headerAndContinuationPayloades = HTTP2Frame.CombineHeaderPayloads(headerAndContinuationFrames);
             // decompress
             var headerBlockFragment = new ArraySegment<byte>(headerAndContinuationPayloades);
-            byte[] decompressedHeaders = new byte[Server.MAX_HTTP2_FRAME_SIZE];
             List<HeaderField> lstheaders = new List<HeaderField>();
-            var dencodeResult = owner.hpackDecoder.DecodeHeaderBlockFragment(headerBlockFragment, (uint)HTTP2Frame.MaxFrameSize, lstheaders); // todo max header size
+            Http2.Hpack.DecoderExtensions.DecodeFragmentResult dencodeResult = owner.hpackDecoder.DecodeHeaderBlockFragment(headerBlockFragment, (uint)HTTP2Frame.MaxFrameSize, lstheaders); // todo max header size
+            if(dencodeResult.Status != DecoderExtensions.DecodeStatus.Success)
+            {
+                Console.WriteLine("Decompress errror: " + dencodeResult.Status);
+                return;
+            }
             foreach (var item in lstheaders)
             {
                 Console.WriteLine(item.Name + " " + item.Value);
@@ -272,7 +276,12 @@ namespace lib.Streams
             }
 
             string file;
-            if (path is null || path == "" || path == "/")
+            if(path is null)
+            {
+                Console.WriteLine("Emtpy path recived");
+                return;
+            }
+            else if (path == "" || path == "/")
             {
                 file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\index.html";
             }
@@ -280,17 +289,18 @@ namespace lib.Streams
             {
                 file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\" + path;
             }
-            if (file.Contains("index.html"))
+            if (file.Contains("about.html"))
             {
-                Console.WriteLine("Push promise <<<<<<<<<<<<<<<<<<<");
-                int promiseId = owner.NextStreamId;
-                string promiseFile = Environment.CurrentDirectory + "\\" + Server.DIR + "\\about.html";
-               // HTTP2RequestGenerator.SendPushPromise(this, streamID, promiseFile);
-               // Thread.Sleep(1000);
-               // HTTP2RequestGenerator.SendFile(this, promiseId, promiseFile);
-                // HTTP2RequestGenerator.SendFileWithPushPromise(this, owner.NextStreamId, Environment.CurrentDirectory + "\\" + Server.DIR + "\\Capture.jpg");
-                // HTTP2RequestGenerator.SendFileWithPushPromise(this, owner.NextStreamId, Environment.CurrentDirectory + "\\" + Server.DIR + "\\Capture2.jpg");
-                Console.WriteLine("Push promise >>>>>>>>>>>>>>>>>>>>");
+                //int promiseId = owner.NextStreamId;
+                //string promiseFile = Environment.CurrentDirectory + "\\" + Server.DIR + "\\Capture2.jpg";
+                //Console.WriteLine($"Push promise <<<<<<<<<<<<<<<<<<< on stream: {streamID} for stream: {promiseId} file: {file}");
+                //if(HTTP2RequestGenerator.SendPushPromise(this, streamID, promiseFile, promiseId))
+                //{
+                //    Thread.Sleep(1000);
+                //    //Console.WriteLine("Sending file on promise: " + promiseId);
+                //    //HTTP2RequestGenerator.SendFile(this, promiseId, promiseFile);
+                //}
+                //Console.WriteLine("Push promise >>>>>>>>>>>>>>>>>>>>");
             }
             HTTP2RequestGenerator.SendFile(this, streamID, file);
 

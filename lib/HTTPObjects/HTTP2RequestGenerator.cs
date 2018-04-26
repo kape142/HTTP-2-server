@@ -28,12 +28,12 @@ namespace lib.HTTPObjects
                 HEADER_OK,
                 new HeaderField{ Name = "content-type", Value = Mapping.MimeMap[fi.Extension], Sensitive = false },
             };
-            fi = ZipStream.Compress(fi);
+            //fi = ZipStream.Compress(fi);
             if (fi.Extension.Equals(".gz"))
             {
                 headers.Add(new HeaderField { Name = "Content-Encoding", Value = "gzip", Sensitive = false });
             }
-            byte[] commpresedHeaders = new byte[HTTP2Frame.SETTINGS_MAX_FRAME_SIZE];
+            byte[] commpresedHeaders = new byte[Server.MAX_HTTP2_FRAME_SIZE];
             // Encode a header block fragment into the output buffer
             var headerBlockFragment = new ArraySegment<byte>(commpresedHeaders);
             // komprimering
@@ -69,13 +69,12 @@ namespace lib.HTTPObjects
             }
         }
 
-        public static void SendPushPromise(StreamHandler streamHandler, int streamId, string url)
+        public static bool SendPushPromise(StreamHandler streamHandler, int streamIdToSendPriseFrameOn, string url, int streamIdToPromise)
         {
             FileInfo fi = new FileInfo(url);
             if (!fi.Exists)
             {
-                SendNotFound(streamHandler, streamId);
-                return;
+                return false;
             }
             List<HeaderField> headers = new List<HeaderField>(){
                 //HEADER_OK,
@@ -96,8 +95,9 @@ namespace lib.HTTPObjects
                 commpresedHeaders[i] = headerBlockFragment[i];
             }
 
-            HTTP2Frame promiseFrame = new HTTP2Frame(streamId).AddPushPromisePayload(streamId, commpresedHeaders, 0, true);
+            HTTP2Frame promiseFrame = new HTTP2Frame(streamIdToSendPriseFrameOn).AddPushPromisePayload(streamIdToPromise, commpresedHeaders, 0, true);
             streamHandler.SendFrame(promiseFrame);
+            return true;
         }
 
         public static void SendFileWithPushPromise(StreamHandler streamHandler, int streamId, string url)

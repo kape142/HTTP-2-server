@@ -13,8 +13,7 @@ namespace lib
         {
             using (FileStream originalFileStream = fileToCompress.OpenRead())
             {
-                if ((File.GetAttributes(fileToCompress.FullName) &
-                   FileAttributes.Hidden) != FileAttributes.Hidden & fileToCompress.Extension != ".gz")
+                if ((File.GetAttributes(fileToCompress.FullName) & FileAttributes.Hidden) != FileAttributes.Hidden & fileToCompress.Extension != ".gz")
                 {
                     using (FileStream compressedFileStream = File.Create(fileToCompress.FullName + ".gz"))
                     {
