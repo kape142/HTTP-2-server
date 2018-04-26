@@ -16,7 +16,7 @@ namespace lib.HTTPObjects
         public static readonly HeaderField HEADER_METHODNOTALLOWED = new HeaderField{Name = ":status", Value = "405", Sensitive = false };
         public static readonly HeaderField HEADER_INTERNALSERVERERROR = new HeaderField{Name = ":status", Value = "500", Sensitive = false };
 
-        public static void SendFile(StreamHandler streamHandler, int streamId, string url, string encoding ="")
+        public static void SendFile(StreamHandler streamHandler, int streamId, string url, string encoding)
         {
             FileInfo fi = new FileInfo(url);
             if (!fi.Exists)
@@ -34,7 +34,7 @@ namespace lib.HTTPObjects
                 fi = ZipStream.Compress(fi);
                 if (fi.Extension.Equals(".gz"))
                 {
-                    headers.Add(new HeaderField { Name = "Content-Encoding", Value = "gzip", Sensitive = false });
+                    headers.Add(new HeaderField { Name = "content-encoding", Value = "gzip", Sensitive = false });
                 }
             }
             byte[] commpresedHeaders = new byte[Server.MAX_HTTP2_FRAME_SIZE];
