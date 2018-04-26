@@ -15,7 +15,7 @@ As this library runs on a preview of the latest .NET Core, there is no support f
 
 ### Installing
 
-Clone soulution of of Github. 
+Clone solution of of Github. 
 
 
 ## Usage
