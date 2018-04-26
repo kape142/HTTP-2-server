@@ -11,6 +11,8 @@ namespace lib.HTTPObjects
 
         public string ContentType{ get; private set; }
 
+        public Dictionary<string, string> Params { get; } = new Dictionary<string, string>();
+
         internal Request() { }
 
         internal Request(byte[] data, string contentType)
@@ -28,8 +30,6 @@ namespace lib.HTTPObjects
         {
             return _data;
         }
-
-        public Dictionary<string , string> Params { get; } = new Dictionary<string, string>();
 
         internal void AddParams(params (string key,string value)[] list)
         {

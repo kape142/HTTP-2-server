@@ -149,69 +149,71 @@ namespace lib.Streams
 
         internal void AddIncomingFrame(HTTP2Frame frame)
         {
+            StringBuilder s = new StringBuilder();
+            s.AppendLine("-----------------");
             switch (frame.Type)
             {
                 case HTTP2Frame.DATA:
-                    Console.WriteLine("DATA frame recived\n" + frame.ToString());
+                    s.AppendLine("DATA frame recived\n" + frame.ToString());
                     if(frame.StreamIdentifier == 0)
                     {
                         // todo svar med protocol error
                     }
                     DataPayload dp = frame.GetDataPayloadDecoded();
-                    if (dp.Data != null) Console.WriteLine(Convert.ToBase64String(dp.Data));
+                    if (dp.Data != null) s.AppendLine(Encoding.ASCII.GetString(dp.Data));
                     break;
                 case HTTP2Frame.HEADERS:
-                    Console.WriteLine("HEADERS frame recived\n" + frame.ToString());
+                    s.AppendLine("HEADERS frame recived\n" + frame.ToString());
                     GetIncommingStreams(frame.StreamIdentifier).Frames.Add(frame);
                     if (frame.FlagEndStream)
                     {
                         EndOfStream(frame.StreamIdentifier);
                         break;
                     }
-                    Console.WriteLine(frame.ToString());
+                    //s.AppendLine(frame.ToString());
                     break;
                 case HTTP2Frame.PRIORITY_TYPE:
-                    Console.WriteLine("PRIORITY_TYPE frame recived\n" + frame.ToString());
+                    s.AppendLine("PRIORITY_TYPE frame recived\n" + frame.ToString());
                     break;
                 case HTTP2Frame.RST_STREAM:
-                    Console.WriteLine("RST_STREAM frame recived\n" + frame.ToString());
+                    s.AppendLine("RST_STREAM frame recived\n" + frame.ToString());
                     RSTStreamPayload rst = frame.GetRSTStreamPayloadDecoded();
-                    Console.WriteLine($"Error code: {rst.ErrorCode} on stream: {frame.StreamIdentifier}");
+                    s.AppendLine($"Error code: {rst.ErrorCode} on stream: {frame.StreamIdentifier}");
                     CloseStream(frame.StreamIdentifier);
                     break;
                 case HTTP2Frame.SETTINGS:
-                    Console.WriteLine("SETTINGS frame recived\n" + frame.ToString());
+                    s.AppendLine("SETTINGS frame recived\n" + frame.ToString());
                     if(frame.StreamIdentifier != 0)
                     {
                         // send protocol error
                         break;
                     }
                     SettingsPayload sp = frame.GetSettingsPayloadDecoded();
-                    Console.WriteLine(sp.ToString());
+                    s.AppendLine(sp.ToString());
                     if (frame.FlagAck) break;
                     SendFrame(new HTTP2Frame(0).AddSettingsPayload(new (ushort, uint)[0], true));
                     break;
                 case HTTP2Frame.PUSH_PROMISE:
-                    Console.WriteLine("PUSH_PROMISE frame recived\n" + frame.ToString());
+                    s.AppendLine("PUSH_PROMISE frame recived\n" + frame.ToString());
                     break;
                 case HTTP2Frame.PING:
-                    Console.WriteLine("PING frame recived\n" + frame.ToString());
+                    s.AppendLine("PING frame recived\n" + frame.ToString());
                     if (!frame.FlagAck)
                     {
                         SendFrame(new HTTP2Frame(frame.StreamIdentifier).AddPingPayload(frame.Payload));
                     }
                     break;
                 case HTTP2Frame.GOAWAY:
-                    Console.WriteLine("GOAWAY frame recived\n" + frame.ToString());
+                    s.AppendLine("GOAWAY frame recived\n" + frame.ToString());
                     GoAwayPayload gp = frame.GetGoAwayPayloadDecoded();
-                    Console.WriteLine(gp.ToString());
+                    s.AppendLine(gp.ToString());
                     owner.Close();
                     break;
                 case HTTP2Frame.WINDOW_UPDATE:
-                    Console.WriteLine("WINDOW_UPDATE frame recived\n" + frame.ToString());
+                    s.AppendLine("WINDOW_UPDATE frame recived\n" + frame.ToString());
                     break;
                 case HTTP2Frame.CONTINUATION:
-                    Console.WriteLine("CONTINUATION frame recived\n" + frame.ToString());
+                    s.AppendLine("CONTINUATION frame recived\n" + frame.ToString());
                     GetIncommingStreams(frame.StreamIdentifier).Frames.Add(frame);
                     if (frame.FlagEndStream)
                     {
@@ -222,10 +224,15 @@ namespace lib.Streams
                 default:
                     break;
             }
+            s.AppendLine("-----------------");
+            Console.WriteLine(s);
         }
 
         void EndOfStream(int streamID)
         {
+            StringBuilder s = new StringBuilder();
+            s.AppendLine("--------------");
+            s.AppendLine($"Headers for streamID {streamID}\n");
             int index = IncomingStreams.FindIndex(x => x.Id == streamID);
             HTTP2Stream currentstream = IncomingStreams[index];
             IncomingStreams.RemoveAt(index);
@@ -240,24 +247,24 @@ namespace lib.Streams
             Http2.Hpack.DecoderExtensions.DecodeFragmentResult dencodeResult = owner.hpackDecoder.DecodeHeaderBlockFragment(headerBlockFragment, (uint)HTTP2Frame.MaxFrameSize, lstheaders); // todo max header size
             if(dencodeResult.Status != DecoderExtensions.DecodeStatus.Success)
             {
-                Console.WriteLine("Decompress errror: " + dencodeResult.Status);
+                s.AppendLine("Decompress errror: " + dencodeResult.Status);
                 return;
             }
             foreach (var item in lstheaders)
             {
-                Console.WriteLine(item.Name + " " + item.Value);
+                s.AppendLine(item.Name + " " + item.Value);
             }
             string method = lstheaders.Find(x => x.Name == ":method").Value;
             string path = lstheaders.Find(x => x.Name == ":path").Value;
             string contentType = lstheaders.Find(x => x.Name == ":content-type").Value;
             string accept = lstheaders.Find(x => x.Name == ":accept").Value;
 
-            if (false)
+            if (RestURI.RestLibrary.HasMethod(method, path))
             {
                 switch (method)
                 {
                     case "GET":
-                        Request getRequest = new Request(null, null);
+                        Request getRequest = new Request(null, contentType);
                         Response getResponse = new Response(this, streamID);
                         RestURI.RestLibrary.Execute("GET", path, getRequest, getResponse);
                         break;
@@ -278,7 +285,7 @@ namespace lib.Streams
             string file;
             if(path is null)
             {
-                Console.WriteLine("Emtpy path recived");
+                s.AppendLine("Emtpy path recived");
                 return;
             }
             else if (path == "" || path == "/")
@@ -302,8 +309,9 @@ namespace lib.Streams
                 //}
                 //Console.WriteLine("Push promise >>>>>>>>>>>>>>>>>>>>");
             }
-            HTTP2RequestGenerator.SendFile(this, streamID, file);
-
+            HTTP2RequestGenerator.SendFile(this, streamID, file, "");
+            s.AppendLine("--------------");
+            Console.WriteLine(s);
         }
 
         internal async Task RespondWithFirstHTTP2(string url)

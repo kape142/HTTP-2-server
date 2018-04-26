@@ -16,6 +16,7 @@ namespace lib
 
         internal void AddURI(string method, string URI, HTTPMethod callback)
         {
+            URI = CleanURI(URI);
             string[] path = URI.Split("/");
             string next = path[0];
             if (next.Equals(""))
@@ -43,11 +44,12 @@ namespace lib
 
         private RestURI(String URI)
         {
-            this.URI = URI;
+            this.URI = CleanURI(URI);
         }
 
         internal void Execute(string method, string URI, Request req, IResponse res)
         {
+            URI = CleanURI(URI);
             string[] path = URI.Split("/");
             string next = path[0];
             if (URI != "")
@@ -74,6 +76,7 @@ namespace lib
 
         internal bool HasMethod(string method, string URI)
         {
+            URI = CleanURI(URI);
             string[] path = URI.Split("/");
             string next = path[0];
             if (URI != "")
@@ -96,6 +99,19 @@ namespace lib
             int split = path.IndexOf("/");
             split = (split >= 0) ? split : path.Length-1;
             return path.Substring(split+1);
+        }
+
+        private string CleanURI(string uri)
+        {
+            if (uri.Length == 0)
+                return uri;
+            if (uri.Substring(0, 1) == "/")
+                uri = uri.Substring(1);
+            if (uri.Length == 0)
+                return uri;
+            if (uri.Substring(uri.Length - 1, 1) == "/")
+                uri = uri.Substring(0, uri.Length - 1);
+            return uri;
         }
     }
 }

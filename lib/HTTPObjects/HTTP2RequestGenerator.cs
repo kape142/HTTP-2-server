@@ -37,19 +37,19 @@ namespace lib.HTTPObjects
                     headers.Add(new HeaderField { Name = "Content-Encoding", Value = "gzip", Sensitive = false });
                 }
             }*/
-            byte[] commpresedHeaders = new byte[Server.MAX_HTTP2_FRAME_SIZE];
+            byte[] commpressedHeaders = new byte[Server.MAX_HTTP2_FRAME_SIZE];
             // Encode a header block fragment into the output buffer
-            var headerBlockFragment = new ArraySegment<byte>(commpresedHeaders);
+            var headerBlockFragment = new ArraySegment<byte>(commpressedHeaders);
             // komprimering
             var encodeResult = streamHandler.owner.hpackEncoder.EncodeInto(headerBlockFragment, headers);
             //Http2.Hpack.Encoder.Result encodeResult = Server.hPackEncoder.EncodeInto(headerBlockFragment, headers);
-            commpresedHeaders = new byte[encodeResult.UsedBytes];
+            commpressedHeaders = new byte[encodeResult.UsedBytes];
             // pick out the used bytes
-            for (int i = 0; i < commpresedHeaders.Length; i++)
+            for (int i = 0; i < commpressedHeaders.Length; i++)
             {
-                commpresedHeaders[i] = headerBlockFragment[i];
+                commpressedHeaders[i] = headerBlockFragment[i];
             }
-            HTTP2Frame headerframe = new HTTP2Frame(streamId).AddHeaderPayload(commpresedHeaders, 0, true, false);
+            HTTP2Frame headerframe = new HTTP2Frame(streamId).AddHeaderPayload(commpressedHeaders, 0, true, false);
             streamHandler.SendFrame(headerframe);
 
             // send file
@@ -198,15 +198,15 @@ namespace lib.HTTPObjects
             {
                 long length = data.Length;
                 long sent = 0;
-                byte[] d = new byte[Server.MAX_HTTP2_FRAME_SIZE];
                 
                 while (sent < length)
                 {
-                    for (long j = 0; (j < Server.MAX_HTTP2_FRAME_SIZE || sent <= length); j++)
+                    byte[] d = new byte[((length-sent)>Server.MAX_HTTP2_FRAME_SIZE)?Server.MAX_HTTP2_FRAME_SIZE:(length-sent)];
+                    for (long j = 0; (j < Server.MAX_HTTP2_FRAME_SIZE && sent < length); j++)
                     {
                         d[j] = data[sent++];
                     }
-                    streamHandler.SendFrame(new HTTP2Frame((int)streamId).AddDataPayload(d));
+                    streamHandler.SendFrame(new HTTP2Frame((int)streamId).AddDataPayload(d,endStream: ((length-sent)<Server.MAX_HTTP2_FRAME_SIZE)));
                 }
             }
             catch (Exception ex)
