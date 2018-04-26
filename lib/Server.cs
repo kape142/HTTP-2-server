@@ -15,32 +15,13 @@ namespace lib
         internal const string DIR = "WebApp";
         internal const int MAX_HTTP2_FRAME_SIZE = 16384;
 
-        private string IpAddress;
+        internal static string IpAddress;
         internal static int Port { get; private set; }
         private X509Certificate2 Certificate;
-        internal static Dictionary<string, Action<object, object>> registerdActionsOnUrls;
         private List<HandleClient> clients = new List<HandleClient>();
-        // public delegate void delAction<T1, T2>(T1 req, out T2 res);
-
-
-        /*
-        Dictionary<string, Func<HTTPRequest, HTTPResponse>> restLibrary = new Dictionary<string, Action<HTTPRequest, HTTPResponse>>();
-
-        public void Get(string path, Action<HTTPRequest, HTTPResponse> callback)
-        {
-            restLibrary.Add("GET/"+path, callback);
-        }
-
-        public void Post(string path, Action<HTTPRequest, HTTPResponse> callback)
-        {
-            restLibrary.Add("POST/" + path, callback);
-        }
-        */
-
 
         public Server(string ipAddress, X509Certificate2 certificate = null)
         {
-            registerdActionsOnUrls = new Dictionary<string, Action<object, object>>();
             IpAddress = ipAddress;
             Certificate = certificate;
             ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
@@ -88,34 +69,14 @@ namespace lib
             }
         }
 
-        //private void Get(string url, Action<object, object> action)
-        //{
-        //    registerdActionsOnUrls.Add("GET" + url, action);
-        //}
-        //
-        //public void Get(string url, Action<byte[], byte[]> action)
-        //{
-        //    registerdActionsOnUrls.Add("GET" + url, action);
-        //}
-
-        //public void Get(string url, Action<HTTP1Request, Response> action)
-        //{
-        //    Get(url, action);
-        //}
-        //
-        //public void Get(string url, delAction<byte[], byte[]> action)
-        //{
-        //    Get(url, action);
-        //}
-        //
-        //public void Get(string url, delAction<object, object> action)
-        //{
-        //    registerdActionsOnUrls.Add("GET" + url, action);
-        //}
-        public void Get(string url, Action<HTTP1Request, HTTP1Response> action)
+        public void Get(string url, RestURI.HTTPMethod action)
         {
-            //registerdActionsOnUrls.Add(url, action);
-            RestURI.RestLibrary.AddURI("GET", url, null);
+            RestURI.RestLibrary.AddURI("GET", url, action);
+        }
+
+        public void Post(string url, RestURI.HTTPMethod action)
+        {
+            RestURI.RestLibrary.AddURI("POST", url, action);
         }
 
         //private void Clean()

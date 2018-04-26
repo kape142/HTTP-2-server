@@ -17,7 +17,7 @@ namespace lib
     public class HandleClient
     {
         private static int _nrOfClientsMade = 0;
-        private int _currentStreamIdPromise = 33;
+        private int _currentStreamIdPromise = 0;
         private object _streamreaderlock = new object();
         private TcpClient _tcpClient;
         private SslStream _sslStream;
@@ -130,13 +130,8 @@ namespace lib
         {
             try
             {
-                Console.WriteLine("Sender ramme: ");
+                Console.WriteLine("Send frame: ");
                 Console.WriteLine(frame.ToString());
-                //lock (binaryWriter)
-                //{
-                //    binaryWriter.Flush();
-                //    binaryWriter.Write(frame.GetBytes(), 0, frame.GetBytes().Length);
-                //}
                 if (_useSsl)
                 {
                     await _sslWriter.FlushAsync();
@@ -156,7 +151,10 @@ namespace lib
 
         private void InitUpgradeToHttp2()
         {
-            hpackEncoder = new Http2.Hpack.Encoder();
+            hpackEncoder = new Http2.Hpack.Encoder(new Http2.Hpack.Encoder.Options {
+                DynamicTableSize = 0,
+                HuffmanStrategy = Http2.Hpack.HuffmanStrategy.Never,
+            });
             hpackDecoder = new Http2.Hpack.Decoder();
             _streamHandler = new StreamHandler(this);
             _streamHandler.StartSendThread();
@@ -214,7 +212,7 @@ namespace lib
                                 _streamHandler.RespondWithFirstHTTP2(req.HttpUrl);
                             }
                         }, () => {
-                            Thread.Sleep(1000);
+                            Thread.Sleep(100);
                         });
                     }
                     else
@@ -240,7 +238,7 @@ namespace lib
                                 }
                             }
                         }, () => {
-                            Thread.Sleep(1000);
+                            Thread.Sleep(100);
                         });
                     }
                     if (_tcpClient.Client.Poll(0, SelectMode.SelectRead))
@@ -299,6 +297,10 @@ namespace lib
                 else numberOfBytesRead = await _http2Reader.ReadAsync(myReadBuffer, 0, myReadBuffer.Length);
             } catch(Exception ex)
             {
+            }
+            if(numberOfBytesRead > 0 && numberOfBytesRead < 3)
+            {
+                int ffff = 0;
             }
 
             if (numberOfBytesRead == 3)

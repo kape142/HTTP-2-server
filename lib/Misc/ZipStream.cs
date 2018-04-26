@@ -31,6 +31,7 @@ namespace lib
             }
             return fileToCompress;
         }
+        
 
         public static void Decompress(FileInfo fileToDecompress)
         {

@@ -5,10 +5,10 @@ using lib.HTTPObjects;
 
 namespace lib
 {
-    internal class RestURI
+    public class RestURI
     {
         public static RestURI RestLibrary { get; } = new RestURI("");
-        internal delegate void HTTPMethod(Request req, IResponse res);
+        public delegate void HTTPMethod(Request req, IResponse res);
         internal String URI { get; }
         private Dictionary<String, RestURI> SubURIs = new Dictionary<string, RestURI>();
         private Dictionary<String, HTTPMethod> Methods = new Dictionary<string, HTTPMethod>();
