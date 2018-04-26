@@ -16,7 +16,7 @@ namespace lib.HTTPObjects
         public static readonly HeaderField HEADER_METHODNOTALLOWED = new HeaderField{Name = ":status", Value = "405", Sensitive = false };
         public static readonly HeaderField HEADER_INTERNALSERVERERROR = new HeaderField{Name = ":status", Value = "500", Sensitive = false };
 
-        public static void SendFile(StreamHandler streamHandler, int streamId, string url)
+        public static void SendFile(StreamHandler streamHandler, int streamId, string url,string encoding)
         {
             FileInfo fi = new FileInfo(url);
             if (!fi.Exists)
@@ -28,6 +28,15 @@ namespace lib.HTTPObjects
                 HEADER_OK,
                 new HeaderField{ Name = "content-type", Value = Mapping.MimeMap[fi.Extension], Sensitive = false },
             };
+
+            if (encoding.Contains("gzip"))
+            {
+                fi = ZipStream.Compress(fi);
+                if (fi.Extension.Equals(".gz"))
+                {
+                    headers.Add(new HeaderField { Name = "Content-Encoding", Value = "gzip", Sensitive = false });
+                }
+            }
             byte[] commpresedHeaders = new byte[HTTP2Frame.SETTINGS_MAX_FRAME_SIZE];
             // Encode a header block fragment into the output buffer
             var headerBlockFragment = new ArraySegment<byte>(commpresedHeaders);
@@ -65,7 +74,7 @@ namespace lib.HTTPObjects
             }
         }
 
-        public static void SendFileWithPushPromise(StreamHandler streamHandler, int streamId, string url)
+        public static void SendFileWithPushPromise(StreamHandler streamHandler, int streamId, string url,string encoding)
         {
             FileInfo fi = new FileInfo(url);
             if (!fi.Exists)
@@ -77,6 +86,15 @@ namespace lib.HTTPObjects
                 HEADER_OK,
                 new HeaderField{ Name = "content-type", Value = Mapping.MimeMap[fi.Extension], Sensitive = false },
             };
+
+            if (encoding.Contains("gzip"))
+            {
+                fi = ZipStream.Compress(fi);
+                if (fi.Extension.Equals(".gz"))
+                {
+                    headers.Add(new HeaderField { Name = "Content-Encoding", Value = "gzip", Sensitive = false });
+                }
+            }
             byte[] commpresedHeaders = new byte[HTTP2Frame.SETTINGS_MAX_FRAME_SIZE];
             // Encode a header block fragment into the output buffer
             var headerBlockFragment = new ArraySegment<byte>(commpresedHeaders);

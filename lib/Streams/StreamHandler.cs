@@ -252,6 +252,7 @@ namespace lib.Streams
             }
             string method = lstheaders.Find(x => x.Name == ":method").Value;
             string path = lstheaders.Find(x => x.Name == ":path").Value;
+            string encoding = lstheaders.Find(x => x.Name == "accept-encoding").Value;
 
             if (Server.registerdActionsOnUrls.ContainsKey(method+path))
             {
@@ -284,13 +285,13 @@ namespace lib.Streams
             {
                 file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\" + path;
             }
-            HTTP2RequestGenerator.SendFile(this, streamID, file);
+            HTTP2RequestGenerator.SendFile(this, streamID, file,encoding);
             if (file.Contains("index.html"))
             {
                 Console.WriteLine("Push promise <<<<<<<<<<<<<<<<<<<");
-                HTTP2RequestGenerator.SendFileWithPushPromise(this, owner.NextStreamId, Environment.CurrentDirectory + "\\" + Server.DIR + "\\about.html");
-                HTTP2RequestGenerator.SendFileWithPushPromise(this, owner.NextStreamId, Environment.CurrentDirectory + "\\" + Server.DIR + "\\Capture.jpg");
-                HTTP2RequestGenerator.SendFileWithPushPromise(this, owner.NextStreamId, Environment.CurrentDirectory + "\\" + Server.DIR + "\\Capture2.jpg");
+                HTTP2RequestGenerator.SendFileWithPushPromise(this, owner.NextStreamId, Environment.CurrentDirectory + "\\" + Server.DIR + "\\about.html",encoding);
+                HTTP2RequestGenerator.SendFileWithPushPromise(this, owner.NextStreamId, Environment.CurrentDirectory + "\\" + Server.DIR + "\\Capture.jpg",encoding);
+                HTTP2RequestGenerator.SendFileWithPushPromise(this, owner.NextStreamId, Environment.CurrentDirectory + "\\" + Server.DIR + "\\Capture2.jpg",encoding);
                 Console.WriteLine("Push promise >>>>>>>>>>>>>>>>>>>>");
             }
 
@@ -302,26 +303,26 @@ namespace lib.Streams
             if (url == ""||url.Contains("index.html"))
             {
                 file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\index.html";
-                HTTP2RequestGenerator.SendFile(this, 1, file);
+                HTTP2RequestGenerator.SendFile(this, 1, file,"");
                 
                 //Server Push simple
                 file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\style.css";
                 if (File.Exists(file))
                 {
                     streamIdTracker += 2;
-                    HTTP2RequestGenerator.SendFile(this, streamIdTracker, file);
+                    HTTP2RequestGenerator.SendFile(this, streamIdTracker, file,"");
                 }
                 file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\script.js";
                 if (File.Exists(file))
                 {
                     streamIdTracker += 2;
-                    HTTP2RequestGenerator.SendFile(this, streamIdTracker, file);
+                    HTTP2RequestGenerator.SendFile(this, streamIdTracker, file,"");
                 }
             }
             else
             {
                 file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\" + url;
-                HTTP2RequestGenerator.SendFile(this, streamIdTracker++, file);
+                HTTP2RequestGenerator.SendFile(this, streamIdTracker++, file,"");
             }
         }
 
