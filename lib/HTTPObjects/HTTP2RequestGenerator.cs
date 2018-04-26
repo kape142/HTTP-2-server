@@ -39,17 +39,17 @@ namespace lib.HTTPObjects
             }
             byte[] commpresedHeaders = new byte[Server.MAX_HTTP2_FRAME_SIZE];
             // Encode a header block fragment into the output buffer
-            var headerBlockFragment = new ArraySegment<byte>(commpressedHeaders);
+            var headerBlockFragment = new ArraySegment<byte>(commpresedHeaders);
             // komprimering
             var encodeResult = streamHandler.owner.hpackEncoder.EncodeInto(headerBlockFragment, headers);
             //Http2.Hpack.Encoder.Result encodeResult = Server.hPackEncoder.EncodeInto(headerBlockFragment, headers);
-            commpressedHeaders = new byte[encodeResult.UsedBytes];
+            commpresedHeaders = new byte[encodeResult.UsedBytes];
             // pick out the used bytes
-            for (int i = 0; i < commpressedHeaders.Length; i++)
+            for (int i = 0; i < commpresedHeaders.Length; i++)
             {
-                commpressedHeaders[i] = headerBlockFragment[i];
+                commpresedHeaders[i] = headerBlockFragment[i];
             }
-            HTTP2Frame headerframe = new HTTP2Frame(streamId).AddHeaderPayload(commpressedHeaders, 0, true, false);
+            HTTP2Frame headerframe = new HTTP2Frame(streamId).AddHeaderPayload(commpresedHeaders, 0, true, false);
             streamHandler.SendFrame(headerframe);
 
             // send file
