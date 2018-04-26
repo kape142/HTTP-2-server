@@ -34,19 +34,19 @@ namespace ExampleServer
 
             
             server.Get("testurl", (req, res) => {
-                Console.WriteLine("GET TEST URLVIRKER");
-                res.Send("get fra test url");
+                res.Send("get from test url");
             });
 
             server.Post("testurl", (req, res) => {
-                Console.WriteLine("POST TEST URLVIRKER");
-                res.Send("post fra test url");
+                res.Send("post from test url");
             });
 
             server.Get("jsonobject", (req, res) =>
              {
                  res.Send("{ \"name\":\"Jone\", \"age\":39, \"car\":null }");
              });
+
+
             /*
             server.Get("/testurl", (req, res) =>
             {
