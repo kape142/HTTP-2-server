@@ -66,7 +66,7 @@ namespace Example
 
 ## Running the tests
 
-Tests for this library is placed in its own project, UnitTesing.csproj. To run our tests you can open the solution in in Visual Studio 2017 and eighter;
+Tests for this library is placed in its own project, UnitTesting.csproj. To run our tests you can open the solution in in Visual Studio 2017 and eighter;
 * Ctrl+R,A
 * press "Test", "Run", "All Tests". As shown  
 ![Where to find test](https://image.ibb.co/gZjKTc/TestVS.png)
@@ -188,7 +188,7 @@ Assert.True(RestLibrary.HasMethod("GET", "shoppinglists"));
 
 ## Implementations
 
-### Establshing a connection over HTTP/2
+### Establishing a connection over HTTP/2
 * Starting HTTP/2 for "http" URIs, ref [RFC7540 Section 3.2](https://tools.ietf.org/html/rfc7540#section-3.2)
 * Starting HTTP/2 for "https" URIs, ref [RFC7540 Section 3.3](https://tools.ietf.org/html/rfc7540#section-3.3)
 * HTTP/2 Connection Preface, ref [RFC7540 Section 3.5](https://tools.ietf.org/html/rfc7540#section-3.5)
