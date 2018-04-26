@@ -281,6 +281,7 @@ namespace lib.Streams
             string path = lstheaders.Find(x => x.Name == ":path").Value;
             string contentType = lstheaders.Find(x => x.Name == ":content-type").Value;
             string accept = lstheaders.Find(x => x.Name == ":accept").Value;
+            string encoding = lstheaders.Find(x => x.Name == "accept-encoding").Value;
 
             if (RestURI.RestLibrary.HasMethod(method, path))
             {
