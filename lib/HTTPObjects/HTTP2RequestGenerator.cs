@@ -37,7 +37,7 @@ namespace lib.HTTPObjects
                     headers.Add(new HeaderField { Name = "Content-Encoding", Value = "gzip", Sensitive = false });
                 }
             }*/
-            byte[] commpresedHeaders = new byte[HTTP2Frame.SETTINGS_MAX_FRAME_SIZE];
+            byte[] commpresedHeaders = new byte[Server.MAX_HTTP2_FRAME_SIZE];
             // Encode a header block fragment into the output buffer
             var headerBlockFragment = new ArraySegment<byte>(commpresedHeaders);
             // komprimering
