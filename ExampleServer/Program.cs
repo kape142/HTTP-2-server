@@ -29,10 +29,24 @@ namespace ExampleServer
                  res.Send("{ \"name\":\"Jone\", \"age\":39, \"car\":null }");
              });
 
+            server.Get("artikler/:kategori/artikkelid", (req, res) =>
+            {
+                int artikkelID = Int32.Parse(req.Params["artikkelid"]);
+                string kategori = req.Params["kategori"];
+                res.Send(Database.HentArtikkelFraDatabase(kategori, artikkelID));
+            });
+
             //Server starts listening to port, and responding to webpage.
             server.Listen(443);
 
             
+        }
+        private static class Database
+        {
+            public static string HentArtikkelFraDatabase(string kategori, int artikkelID)
+            {
+                return $"Dette er artikkel #{artikkelID} i kategorien {kategori}, fersk fra databasen";
+            }
         }
     }
 }
