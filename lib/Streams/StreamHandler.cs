@@ -13,6 +13,7 @@ namespace lib.Streams
 {
     class StreamHandler
     {
+        private static string directory = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.ToString();
         private List<HTTP2Stream> OutgoingStreams = new List<HTTP2Stream>();
         private List<HTTP2Stream> IncomingStreams = new List<HTTP2Stream>();
         private Queue<HTTP2Frame> framesToSend = new Queue<HTTP2Frame>();
@@ -315,11 +316,11 @@ namespace lib.Streams
             }
             else if (path == "" || path == "/")
             {
-                file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\index.html";
+                file = directory + "\\" + Server.DIR + "\\index.html";
             }
             else
             {
-                file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\" + path;
+                file = directory + "\\" + Server.DIR + "\\" + path;
             }
             HTTP2RequestGenerator.SendFile(this, streamID, file,encoding);
             s.AppendLine("--------------");

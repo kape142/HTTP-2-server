@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using lib;
 
@@ -36,10 +37,13 @@ namespace ExampleServer
                 res.Send(Database.HentArtikkelFraDatabase(kategori, artikkelID));
             });
 
+            server.Use("WebApp");
+
+           
             //Server starts listening to port, and responding to webpage.
             server.Listen(443);
 
-            
+
         }
         private static class Database
         {

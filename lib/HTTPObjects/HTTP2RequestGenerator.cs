@@ -28,8 +28,7 @@ namespace lib.HTTPObjects
                 HEADER_OK,
                 new HeaderField{ Name = "content-type", Value = Mapping.MimeMap[fi.Extension], Sensitive = false },
             };
-
-            if (encoding.Contains("gzip"))
+            if (encoding != null && encoding.Contains("gzip"))
             {
                 fi = ZipStream.Compress(fi);
                 if (fi.Extension.Equals(".gz"))
@@ -71,6 +70,8 @@ namespace lib.HTTPObjects
                     streamHandler.SendFrame(new HTTP2Frame((int)streamId).AddDataPayload(d, 0, true));
                 }
             }
+            if (fi.Extension.Equals(".gz"))
+                fi.Delete();
         }
 
         public static bool SendPushPromise(StreamHandler streamHandler, int streamIdToSendPriseFrameOn, string url, int streamIdToPromise, string file)
