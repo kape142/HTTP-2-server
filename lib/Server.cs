@@ -15,6 +15,7 @@ namespace lib
         internal const int MAX_HTTP2_FRAME_SIZE = 16384;
 
         internal static string DIR = "WebApp";
+        public static bool UseGZip { get; set; } = true;
         internal static string IpAddress;
         internal static int Port { get; private set; }
         private X509Certificate2 Certificate;

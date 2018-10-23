@@ -16,16 +16,18 @@ namespace lib.Streams
         private static string directory = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.ToString();
         private List<HTTP2Stream> OutgoingStreams = new List<HTTP2Stream>();
         private List<HTTP2Stream> IncomingStreams = new List<HTTP2Stream>();
+        private List<HTTP2Stream> ClosedStreams = new List<HTTP2Stream>();
         private Queue<HTTP2Frame> framesToSend = new Queue<HTTP2Frame>();
         object lockFramesToSend = new object();
         internal HandleClient owner; 
         private bool sendFramesThreadAlive = true;
+        
         int streamIdTracker = 2;
 
         public StreamHandler(HandleClient client)
         {
             owner = client;
-            IncomingStreams.Add(new HTTP2Stream(0));
+            IncomingStreams.Add(new HTTP2Stream(0, StreamState.Idle, owner.settings.InitialWindowSize));
         }
 
         internal void StartSendThread()
@@ -85,7 +87,7 @@ namespace lib.Streams
             }
             else 
             {
-                HTTP2Stream parent = findStreamById(stream.Dependency, OutgoingStreams,false);
+                HTTP2Stream parent = FindStreamById(stream.Dependency, OutgoingStreams,false);
                 if(parent != null){
                     parent.dependencies.Add(stream);
                 }
@@ -98,7 +100,7 @@ namespace lib.Streams
             IncomingStreams.Add(stream);
         }
 
-        public void closeStream(HTTP2Stream inStream)
+        public void CloseStream(HTTP2Stream inStream)
         {
             foreach(HTTP2Stream stream in inStream.dependencies)
             {
@@ -106,7 +108,7 @@ namespace lib.Streams
             }
         }
 
-        public HTTP2Stream findStreamById(uint id,List<HTTP2Stream> streams, bool remove)
+        public HTTP2Stream FindStreamById(uint id,List<HTTP2Stream> streams, bool remove)
         {
             foreach(HTTP2Stream stream in streams)
             {
@@ -117,15 +119,15 @@ namespace lib.Streams
                 }
                 else
                 {
-                    return findStreamById(id, stream.dependencies, remove);
+                    return FindStreamById(id, stream.dependencies, remove);
                 }
             }
             return null;
         }
 
-        void updateStream(HTTP2Stream stream)
+        void UpdateStream(HTTP2Stream stream)
         {
-            HTTP2Stream streamToUpdate = findStreamById(stream.Id, OutgoingStreams, (stream.Dependency != 0));
+            HTTP2Stream streamToUpdate = FindStreamById(stream.Id, OutgoingStreams, (stream.Dependency != 0));
             streamToUpdate.Dependency = stream.Dependency;
             streamToUpdate.Weight = stream.Weight;
             AddStreamToOutgoing(streamToUpdate);
@@ -169,7 +171,7 @@ namespace lib.Streams
             switch (frame.Type)
             {
                 case HTTP2Frame.DATA:
-                    s.AppendLine("DATA frame recived\n" + frame.ToString());
+                    s.AppendLine("DATA frame received\n" + frame.ToString());
                     if(frame.StreamIdentifier == 0)
                     {
                         // todo svar med protocol error
@@ -184,7 +186,7 @@ namespace lib.Streams
                     if (dp.Data != null) s.AppendLine(Encoding.ASCII.GetString(dp.Data));
                     break;
                 case HTTP2Frame.HEADERS:
-                    s.AppendLine("HEADERS frame recived\n" + frame.ToString());
+                    s.AppendLine("HEADERS frame received\n" + frame.ToString());
                     GetIncommingStreams(frame.StreamIdentifier).Frames.Add(frame);
                     if (frame.FlagEndStream)
                     {
@@ -194,16 +196,16 @@ namespace lib.Streams
                     //s.AppendLine(frame.ToString());
                     break;
                 case HTTP2Frame.PRIORITY_TYPE:
-                    s.AppendLine("PRIORITY_TYPE frame recived\n" + frame.ToString());
+                    s.AppendLine("PRIORITY_TYPE frame received\n" + frame.ToString());
                     break;
                 case HTTP2Frame.RST_STREAM:
-                    s.AppendLine("RST_STREAM frame recived\n" + frame.ToString());
+                    s.AppendLine("RST_STREAM frame received\n" + frame.ToString());
                     RSTStreamPayload rst = frame.GetRSTStreamPayloadDecoded();
                     s.AppendLine($"Error code: {rst.ErrorCode} on stream: {frame.StreamIdentifier}");
                     CloseStream(frame.StreamIdentifier);
                     break;
                 case HTTP2Frame.SETTINGS:
-                    s.AppendLine("SETTINGS frame recived\n" + frame.ToString());
+                    s.AppendLine("SETTINGS frame received\n" + frame.ToString());
                     if(frame.StreamIdentifier != 0)
                     {
                         // send protocol error
@@ -211,30 +213,34 @@ namespace lib.Streams
                     }
                     SettingsPayload sp = frame.GetSettingsPayloadDecoded();
                     s.AppendLine(sp.ToString());
+                    owner.settings.ApplySettings(sp.Settings);
                     if (frame.FlagAck) break;
                     SendFrame(new HTTP2Frame(0).AddSettingsPayload(new (ushort, uint)[0], true));
                     break;
                 case HTTP2Frame.PUSH_PROMISE:
-                    s.AppendLine("PUSH_PROMISE frame recived\n" + frame.ToString());
+                    s.AppendLine("PUSH_PROMISE frame received\n" + frame.ToString());
                     break;
                 case HTTP2Frame.PING:
-                    s.AppendLine("PING frame recived\n" + frame.ToString());
+                    s.AppendLine("PING frame received\n" + frame.ToString());
                     if (!frame.FlagAck)
                     {
                         SendFrameImmmediate(new HTTP2Frame(frame.StreamIdentifier).AddPingPayload(frame.Payload, true));
                     }
                     break;
                 case HTTP2Frame.GOAWAY:
-                    s.AppendLine("GOAWAY frame recived\n" + frame.ToString());
+                    s.AppendLine("GOAWAY frame received\n" + frame.ToString());
                     GoAwayPayload gp = frame.GetGoAwayPayloadDecoded();
                     s.AppendLine(gp.ToString());
                     owner.Close();
                     break;
                 case HTTP2Frame.WINDOW_UPDATE:
-                    s.AppendLine("WINDOW_UPDATE frame recived\n" + frame.ToString());
+                    s.AppendLine("WINDOW_UPDATE frame received\n" + frame.ToString());
+                    WindowUpdatePayload wup= frame.GetWindowUpdatePayloadDecoded();
+                    s.AppendLine(wup.ToString());
+                    IncreaseWindowSize((uint)frame.StreamIdentifier, (uint)wup.WindowSizeIncrement);
                     break;
                 case HTTP2Frame.CONTINUATION:
-                    s.AppendLine("CONTINUATION frame recived\n" + frame.ToString());
+                    s.AppendLine("CONTINUATION frame received\n" + frame.ToString());
                     GetIncommingStreams(frame.StreamIdentifier).Frames.Add(frame);
                     if (frame.FlagEndStream)
                     {
@@ -247,6 +253,63 @@ namespace lib.Streams
             }
             s.AppendLine("-----------------");
             Console.WriteLine(s);
+        }
+
+        internal void IncreaseWindowSize(uint streamId, uint amount)
+        {
+            if (streamId == 0)
+            {
+                owner.windowSize += amount;
+                Console.WriteLine($"Connection window size: {WindowUpdatePayload.ConvertToLargerUnit((int)owner.windowSize)} - increased");
+                return;
+            }
+            HTTP2Stream stream = FindStreamById(streamId, IncomingStreams, false);
+            if (stream == null)
+                stream = FindStreamById(streamId, OutgoingStreams, false);
+            if (stream != null)
+            {
+                stream.WindowSize += amount;
+                Console.WriteLine($"Stream #{streamId} window size: {WindowUpdatePayload.ConvertToLargerUnit((int)stream.WindowSize)} - increased");
+                return;
+            }
+            Console.WriteLine($"no such streamId #{streamId}- increase");
+        }
+
+        internal int ReduceWindowSize(uint streamId, uint amount)
+        {
+            if (streamId == 0)
+            {
+                int newsize = (int)owner.windowSize - (int)amount;
+                owner.windowSize = (newsize >= 0) ? (uint)newsize : 0;
+                Console.WriteLine($"Connection window size: {WindowUpdatePayload.ConvertToLargerUnit((int)owner.windowSize)} - reduced");
+                return newsize;
+            }
+            HTTP2Stream stream = FindStreamById(streamId, IncomingStreams, false);
+            if (stream == null)
+                stream = FindStreamById(streamId, OutgoingStreams, false);
+            if (stream != null)
+            {
+                int newsize = (int)stream.WindowSize - (int)amount;
+                stream.WindowSize = (newsize >= 0) ? (uint)newsize : 0;
+                Console.WriteLine($"Stream #{streamId} window size: {WindowUpdatePayload.ConvertToLargerUnit((int)stream.WindowSize)} - reduced");
+                return newsize;
+            }
+            throw new Exception($"no such streamId #{streamId}- reduce");
+        }
+
+        internal void BufferDataForWindowUpdate(uint streamId, byte[] data, string contentType)
+        {
+            HTTP2Stream stream = FindStreamById(streamId, IncomingStreams, false);
+            if (stream == null)
+                stream = FindStreamById(streamId, OutgoingStreams, false);
+            if (stream != null)
+            {
+                stream.SendBufferedData = () =>
+                {
+                    HTTP2RequestGenerator.SendData(this,(int)streamId,data,contentType, false);
+                };
+                Console.WriteLine($"Data buffered on stream #{streamId}, window size: {WindowUpdatePayload.ConvertToLargerUnit((int)stream.WindowSize)}");
+            }
         }
 
         void EndOfStream(int streamID)
@@ -265,7 +328,7 @@ namespace lib.Streams
             // decompress
             var headerBlockFragment = new ArraySegment<byte>(headerAndContinuationPayloades);
             List<HeaderField> lstheaders = new List<HeaderField>();
-            Http2.Hpack.DecoderExtensions.DecodeFragmentResult dencodeResult = owner.hpackDecoder.DecodeHeaderBlockFragment(headerBlockFragment, (uint)HTTP2Frame.MaxFrameSize, lstheaders); // todo max header size
+            DecoderExtensions.DecodeFragmentResult dencodeResult = owner.hpackDecoder.DecodeHeaderBlockFragment(headerBlockFragment, (uint)HTTP2Frame.MaxFrameSize, lstheaders); // todo max header size
             if(dencodeResult.Status != DecoderExtensions.DecodeStatus.Success)
             {
                 CancelSending();
@@ -311,7 +374,7 @@ namespace lib.Streams
             string file;
             if(path is null)
             {
-                s.AppendLine("Emtpy path recived");
+                s.AppendLine("Emtpy path received");
                 return;
             }
             else if (path == "" || path == "/")
@@ -327,7 +390,7 @@ namespace lib.Streams
             Console.WriteLine(s);
         }
 
-        internal async Task RespondWithFirstHTTP2(string url)
+        internal async Task RespondWithFirstHTTP2(string url) //wtf
         {
             string file;
             if (url == ""||url.Contains("index.html"))
@@ -335,7 +398,7 @@ namespace lib.Streams
                 file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\index.html";
                 HTTP2RequestGenerator.SendFile(this, 1, file,"");
                 
-                //Server Push simple
+                //Server Push simple 
                 file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\style.css";
                 if (File.Exists(file))
                 {

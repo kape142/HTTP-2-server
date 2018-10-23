@@ -9,6 +9,8 @@ namespace ExampleServer
     {
         static void Main(string[] args)
         {
+            Console.BufferHeight = 10000;
+
             //Creating the certificate
             var serverCertificate = new X509Certificate2("Certificate/TcpTLSServer_TemporaryKey.pfx", "1234");
             //Creating the server
@@ -30,6 +32,7 @@ namespace ExampleServer
                  res.Send("{ \"name\":\"Jone\", \"age\":39, \"car\":null }");
              });
 
+            //test Path Variable
             server.Get("artikler/:kategori/artikkelid", (req, res) =>
             {
                 int artikkelID = Int32.Parse(req.Params["artikkelid"]);
@@ -38,7 +41,7 @@ namespace ExampleServer
             });
 
             server.Use("WebApp");
-
+            //Server.UseGZip = false;
            
             //Server starts listening to port, and responding to webpage.
             server.Listen(443);
