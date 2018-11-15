@@ -2,6 +2,9 @@
 
 An implementation of the [HTTP/2 protocol](https://tools.ietf.org/html/rfc7540) in .NET Core
 
+This project was developed in a duration of ten days.
+Further development is, for now, not planned.
+
 ## Getting Started
 
 These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See usage for notes on how to use the library in your system.
