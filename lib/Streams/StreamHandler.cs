@@ -16,7 +16,7 @@ namespace lib.Streams
         private static string directory = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.ToString();
         private List<HTTP2Stream> OutgoingStreams = new List<HTTP2Stream>();
         private List<HTTP2Stream> IncomingStreams = new List<HTTP2Stream>();
-        private List<HTTP2Stream> ClosedStreams = new List<HTTP2Stream>();
+        private Dictionary<uint, Action> SendBufferedDataList = new Dictionary<uint, Action>();
         private Queue<HTTP2Frame> framesToSend = new Queue<HTTP2Frame>();
         object lockFramesToSend = new object();
         internal HandleClient owner; 
@@ -119,7 +119,11 @@ namespace lib.Streams
                 }
                 else
                 {
-                    return FindStreamById(id, stream.dependencies, remove);
+                    var dependency = FindStreamById(id, stream.dependencies, remove);
+                    if(dependency != null)
+                    {
+                        return dependency;
+                    }
                 }
             }
             return null;
@@ -144,7 +148,7 @@ namespace lib.Streams
 
         internal bool IncomingStreamExist(int streamId)
         {
-            return IncomingStreams.Exists(x => x.Id == streamId);
+            return IncomingStreams.Exists(x => x.Id == (uint)streamId);
         }
 
         private void CloseStream(int streamId)
@@ -270,9 +274,17 @@ namespace lib.Streams
             {
                 stream.WindowSize += amount;
                 Console.WriteLine($"Stream #{streamId} window size: {WindowUpdatePayload.ConvertToLargerUnit((int)stream.WindowSize)} - increased");
+                if (SendBufferedDataList.ContainsKey(streamId))
+                {
+                    SendBufferedDataList[streamId]();
+                    //SendBufferedDataList.Remove(streamId);
+                    //Console.WriteLine($"Buffered data on stream #{streamId} removed");
+                }
+                    
                 return;
             }
-            Console.WriteLine($"no such streamId #{streamId}- increase");
+            IncomingStreams.Add(new HTTP2Stream(streamId, StreamState.Open, owner.settings.InitialWindowSize + amount));
+            Console.WriteLine($"no such streamId #{streamId}- increase; creating it");
         }
 
         internal int ReduceWindowSize(uint streamId, uint amount)
@@ -289,12 +301,19 @@ namespace lib.Streams
                 stream = FindStreamById(streamId, OutgoingStreams, false);
             if (stream != null)
             {
+                int newsizeOwner = (int)owner.windowSize - (int)amount;
+                owner.windowSize = (newsizeOwner >= 0) ? (uint)newsizeOwner : 0;
+                Console.WriteLine($"Connection window size: {WindowUpdatePayload.ConvertToLargerUnit((int)owner.windowSize)} - reduced");
                 int newsize = (int)stream.WindowSize - (int)amount;
                 stream.WindowSize = (newsize >= 0) ? (uint)newsize : 0;
                 Console.WriteLine($"Stream #{streamId} window size: {WindowUpdatePayload.ConvertToLargerUnit((int)stream.WindowSize)} - reduced");
-                return newsize;
+                return Math.Min(newsize, newsizeOwner);
             }
-            throw new Exception($"no such streamId #{streamId}- reduce");
+            int newSize = (int)owner.settings.InitialWindowSize - (int)amount;
+            uint newSizeUint= (newSize >= 0) ? (uint)newSize : 0;
+            IncomingStreams.Add(new HTTP2Stream(streamId, StreamState.Open, newSizeUint));
+            Console.WriteLine($"no such streamId #{streamId}- reduce; creating it");
+            return newSize;
         }
 
         internal void BufferDataForWindowUpdate(uint streamId, byte[] data, string contentType)
@@ -304,11 +323,19 @@ namespace lib.Streams
                 stream = FindStreamById(streamId, OutgoingStreams, false);
             if (stream != null)
             {
-                stream.SendBufferedData = () =>
+                if (SendBufferedDataList.ContainsKey(streamId))
                 {
-                    HTTP2RequestGenerator.SendData(this,(int)streamId,data,contentType, false);
-                };
-                Console.WriteLine($"Data buffered on stream #{streamId}, window size: {WindowUpdatePayload.ConvertToLargerUnit((int)stream.WindowSize)}");
+                    SendBufferedDataList.Remove(streamId);
+                    Console.WriteLine($"Buffered data on stream #{streamId} removed");
+                }
+                    
+                SendBufferedDataList.TryAdd(streamId, () =>
+                {
+                    Console.WriteLine("Sending buffered data");
+                    HTTP2RequestGenerator.SendData(this, (int)streamId, data, contentType, true);
+                });
+                Console.WriteLine($"Data buffered on stream #{streamId}, window size: {WindowUpdatePayload.ConvertToLargerUnit((int)stream.WindowSize)}, " +
+                    $"data size: {WindowUpdatePayload.ConvertToLargerUnit(data.Length)}");
             }
         }
 
@@ -379,11 +406,12 @@ namespace lib.Streams
             }
             else if (path == "" || path == "/")
             {
-                file = directory + "\\" + Server.DIR + "\\index.html";
+                file = CombinePath(directory, Server.DIR, "index.html");
             }
             else
             {
-                file = directory + "\\" + Server.DIR + "\\" + path;
+                file = CombinePath(directory, Server.DIR, path);
+                s.AppendLine($"{directory} + {Server.DIR} + {path} = {file}");
             }
             HTTP2RequestGenerator.SendFile(this, streamID, file,encoding);
             s.AppendLine("--------------");
@@ -395,17 +423,17 @@ namespace lib.Streams
             string file;
             if (url == ""||url.Contains("index.html"))
             {
-                file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\index.html";
+                file = CombinePath(Environment.CurrentDirectory, Server.DIR, "index.html");
                 HTTP2RequestGenerator.SendFile(this, 1, file,"");
-                
+
                 //Server Push simple 
-                file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\style.css";
+                file = CombinePath(Environment.CurrentDirectory, Server.DIR, "style.css");
                 if (File.Exists(file))
                 {
                     streamIdTracker += 2;
                     HTTP2RequestGenerator.SendFile(this, streamIdTracker, file,"");
                 }
-                file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\script.js";
+                file = CombinePath(Environment.CurrentDirectory, Server.DIR, "script.js");
                 if (File.Exists(file))
                 {
                     streamIdTracker += 2;
@@ -414,7 +442,7 @@ namespace lib.Streams
             }
             else
             {
-                file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\" + url;
+                file = CombinePath(Environment.CurrentDirectory , Server.DIR, url);
                 HTTP2RequestGenerator.SendFile(this, streamIdTracker++, file,"");
             }
         }
@@ -425,6 +453,19 @@ namespace lib.Streams
             OutgoingStreams = null;
             IncomingStreams = null;
             framesToSend = null;
+        }
+
+        private static String CombinePath(params string[] path)
+        {
+            for(int i = 0; i < path.Length; i++)
+            {
+                if (Path.IsPathRooted(path[i]))
+                {
+                    path[i] = path[i].TrimStart(Path.DirectorySeparatorChar);
+                    path[i] = path[i].TrimStart(Path.AltDirectorySeparatorChar);
+                }
+            }
+            return Path.Combine(path);
         }
     }
 

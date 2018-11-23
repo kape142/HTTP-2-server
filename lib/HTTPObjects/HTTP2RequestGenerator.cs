@@ -136,11 +136,13 @@ namespace lib.HTTPObjects
                     {
                         d[j] = data[sent++];
                     }
+                   
                     streamHandler.SendFrame(new HTTP2Frame((int)streamId).AddDataPayload(d,endStream: (length==sent)));
                     if (overflow < 0)
                     {
                         byte[] bufferedData = Bytes.GetPartOfByteArray(sent, length, data);
                         streamHandler.BufferDataForWindowUpdate((uint)streamId, bufferedData, contentType);
+                        break;
                     }
                 }
             }

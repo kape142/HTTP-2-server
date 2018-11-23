@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Text;
 using lib.Frames;
 using lib.HTTPObjects;
+using System.Diagnostics;
+
 namespace lib.Streams
 {
     internal class HTTP2Stream
@@ -13,6 +15,7 @@ namespace lib.Streams
             Frames = new List<HTTP2Frame>();
             this.WindowSize = WindowSize;
             dependencies = new List<HTTP2Stream>();
+            Console.WriteLine("ID: "+id+": "+new StackFrame(1).GetMethod().Name);
         }
 
         public uint Id { get; private set; }
@@ -22,6 +25,5 @@ namespace lib.Streams
         public List<HTTP2Frame> Frames { get; set; }
         public StreamState State { get; set; }
         public uint WindowSize { get; set; }
-        public Action SendBufferedData  { get; set; }
     }
 }
