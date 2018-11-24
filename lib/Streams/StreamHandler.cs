@@ -305,13 +305,13 @@ namespace lib.Streams
                 stream = FindStreamById(streamId, OutgoingStreams, false);
             if (stream != null)
             {
-                int newsizeOwner = (int)owner.windowSize - (int)amount;
-                owner.windowSize = (newsizeOwner >= 0) ? (uint)newsizeOwner : 0;
-                Console.WriteLine($"Connection window size: {WindowUpdatePayload.ConvertToLargerUnit((int)owner.windowSize)} - reduced");
+                //int newsizeOwner = (int)owner.windowSize - (int)amount;
+                //owner.windowSize = (newsizeOwner >= 0) ? (uint)newsizeOwner : 0;
+                //Console.WriteLine($"Connection window size: {WindowUpdatePayload.ConvertToLargerUnit((int)owner.windowSize)} - reduced");
                 int newsize = (int)stream.WindowSize - (int)amount;
                 stream.WindowSize = (newsize >= 0) ? (uint)newsize : 0;
                 Console.WriteLine($"Stream #{streamId} window size: {WindowUpdatePayload.ConvertToLargerUnit((int)stream.WindowSize)} - reduced");
-                return Math.Min(newsize, newsizeOwner);
+                return newsize;
             }
             int newSize = (int)owner.settings.InitialWindowSize - (int)amount;
             uint newSizeUint= (newSize >= 0) ? (uint)newSize : 0;
