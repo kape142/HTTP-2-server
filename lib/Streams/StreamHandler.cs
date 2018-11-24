@@ -13,7 +13,7 @@ namespace lib.Streams
 {
     class StreamHandler
     {
-        private static string directory = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.ToString();
+        private static string directory = Directory.GetCurrentDirectory().ToString();
         private List<HTTP2Stream> OutgoingStreams = new List<HTTP2Stream>();
         private List<HTTP2Stream> IncomingStreams = new List<HTTP2Stream>();
         private Dictionary<uint, Action> SendBufferedDataList = new Dictionary<uint, Action>();
@@ -27,6 +27,10 @@ namespace lib.Streams
         public StreamHandler(HandleClient client)
         {
             owner = client;
+            if (Server.UseDebugDirectory)
+            {
+                directory = Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.ToString();
+            }
             IncomingStreams.Add(new HTTP2Stream(0, StreamState.Idle, owner.settings.InitialWindowSize));
         }
 
@@ -455,15 +459,14 @@ namespace lib.Streams
             framesToSend = null;
         }
 
-        private static String CombinePath(params string[] path)
+        internal static String CombinePath(params string[] path)
         {
-            for(int i = 0; i < path.Length; i++)
+            var last = path[path.Length - 1];
+            if (Path.IsPathRooted(last))
             {
-                if (Path.IsPathRooted(path[i]))
-                {
-                    path[i] = path[i].TrimStart(Path.DirectorySeparatorChar);
-                    path[i] = path[i].TrimStart(Path.AltDirectorySeparatorChar);
-                }
+                last = last.TrimStart(Path.DirectorySeparatorChar);
+                last = last.TrimStart(Path.AltDirectorySeparatorChar);
+                path[path.Length - 1] = last;
             }
             return Path.Combine(path);
         }

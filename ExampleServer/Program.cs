@@ -9,7 +9,7 @@ namespace ExampleServer
     {
         static void Main(string[] args)
         {
-            Console.BufferHeight = short.MaxValue-1;
+            //Console.BufferHeight = short.MaxValue-1;
 
             //Creating the certificate
             var serverCertificate = new X509Certificate2("Certificate/TcpTLSServer_TemporaryKey.pfx", "1234");
@@ -42,6 +42,7 @@ namespace ExampleServer
 
             server.Use("WebApp");
             //Server.UseGZip = false;
+            //Server.UseDebugDirectory = true;
            
             //Server starts listening to port, and responding to webpage.
             server.Listen(443);

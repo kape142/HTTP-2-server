@@ -16,6 +16,7 @@ namespace lib
 
         internal static string DIR = "WebApp";
         public static bool UseGZip { get; set; } = true;
+        public static bool UseDebugDirectory { get; set; } = false;
         internal static string IpAddress;
         internal static int Port { get; private set; }
         private X509Certificate2 Certificate;
