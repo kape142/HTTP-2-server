@@ -358,43 +358,42 @@ namespace lib.HTTPObjects
             switch (byteArray[3])
             {
                 case DATA:
-                    s.Append("Data");
+                    s.AppendLine("Data");
                     break;
                 case HEADERS:
-                    s.Append("Headers");
+                    s.AppendLine("Headers");
                     break;
                 case PRIORITY_TYPE:
-                    s.Append("Priority");
+                    s.AppendLine("Priority");
                     break;
                 case RST_STREAM:
-                    s.Append("RST Stream");
+                    s.AppendLine("RST Stream");
                     break;
                 case SETTINGS:
-                    s.Append("Settings");
+                    s.AppendLine("Settings");
                     break;
                 case PUSH_PROMISE:
-                    s.Append("Push Promise");
+                    s.AppendLine("Push Promise");
                     break;
                 case PING:
-                    s.Append("Ping");
+                    s.AppendLine("Ping");
                     break;
                 case GOAWAY:
-                    s.Append("GoAway");
+                    s.AppendLine("GoAway");
                     break;
                 case WINDOW_UPDATE:
-                    s.Append("Window Update");
+                    s.AppendLine("Window Update");
                     break;
                 case CONTINUATION:
-                    s.Append("Continuation");
+                    s.AppendLine("Continuation");
                     break;
                 default:
-                    s.Append("Undefined");
+                    s.AppendLine("Undefined");
                     break;
             }
-            s.Append(", ");
-            s.Append($"Flag: {this.Flag}, End Headers: {FlagEndHeaders} End Stream: {FlagEndStream} Ack: {FlagAck}");
-            s.Append($"Length: {this.PayloadLength}, ");
-            s.Append($"Stream identifier: {this.StreamIdentifier}");
+            s.AppendLine($"Flag: {this.Flag} => End Headers={FlagEndHeaders}, End Stream={FlagEndStream}, Ack={FlagAck}");
+            s.AppendLine($"Length: {this.PayloadLength}");
+            s.AppendLine($"Stream identifier: {this.StreamIdentifier}");
 
             return s.ToString();
 
@@ -437,9 +436,9 @@ namespace lib.HTTPObjects
             if (padded) hp.PadLength = GetPartOfPayload(0, 1)[0];
             if (priority)
             {
-                var temp = Split32BitToBoolAnd31bitInt(ConvertFromIncompleteByteArray(GetPartOfPayload(1, 4)));
-                hp.StreamDependencyIsExclusive = temp.bit32;
-                hp.StreamDependency = temp.int31;
+                var (bit32, int31) = Split32BitToBoolAnd31bitInt(ConvertFromIncompleteByteArray(GetPartOfPayload(1, 4)));
+                hp.StreamDependencyIsExclusive = bit32;
+                hp.StreamDependency = int31;
                 hp.Weight = GetPartOfPayload(5, 6)[0];
             }
             hp.HeaderBlockFragment.Bytearray = data;
@@ -453,20 +452,22 @@ namespace lib.HTTPObjects
                 //todo
                 throw new Exception("wrong type of frame requested");
             }
-            var split = Split32BitToBoolAnd31bitInt(ConvertFromIncompleteByteArray(GetPartOfPayload(0, 4)));
-            PriorityPayload pp = new PriorityPayload();
-            pp.StreamDependencyIsExclusive = split.bit32;
-            pp.StreamDependency = split.int31;
-            pp.Weight = GetPartOfPayload(4, 5)[0];
+            var (bit32, int31) = Split32BitToBoolAnd31bitInt(ConvertFromIncompleteByteArray(GetPartOfPayload(0, 4)));
+            PriorityPayload pp = new PriorityPayload
+            {
+                StreamDependencyIsExclusive = bit32,
+                StreamDependency = int31,
+                Weight = GetPartOfPayload(4, 5)[0]
+            };
             return pp;
         }
 
         public GoAwayPayload GetGoAwayPayloadDecoded()
         {
             GoAwayPayload gp = new GoAwayPayload();
-            var temp = Split32BitToBoolAnd31bitInt(ConvertFromIncompleteByteArray(GetPartOfPayload(0, 4)));
-            gp.r = temp.bit32;
-            gp.LastStreamId = temp.int31;
+            var (bit32, int31) = Split32BitToBoolAnd31bitInt(ConvertFromIncompleteByteArray(GetPartOfPayload(0, 4)));
+            gp.r = bit32;
+            gp.LastStreamId = int31;
             gp.ErrorCode = ConvertFromIncompleteByteArray(GetPartOfPayload(4, 8));
             gp.AdditionalDebugData = Encoding.ASCII.GetString(GetPartOfPayload(8, PayloadLength));
             return gp;
@@ -476,8 +477,10 @@ namespace lib.HTTPObjects
         {
             if (Type != RST_STREAM)
                 throw new Exception("wrong type of frame requested");
-            var rp = new RSTStreamPayload();
-            rp.ErrorCode = ConvertFromIncompleteByteArrayUnsigned(Payload);
+            var rp = new RSTStreamPayload
+            {
+                ErrorCode = ConvertFromIncompleteByteArrayUnsigned(Payload)
+            };
             return rp;
         }
 
@@ -504,12 +507,15 @@ namespace lib.HTTPObjects
         {
             if(Type != PUSH_PROMISE)
                 throw new Exception("wrong type of frame requested");
-            var pp = new PushPromisePayload();
-            bool padded = ((Flag & FLAG_PADDED) > 0);
             
-            pp.PadLength = (byte)(padded ? GetPartOfPayload(0, 1)[0] : 0x0);
+            bool padded = ((Flag & FLAG_PADDED) > 0);
             int i = padded ? 1 : 0;
-            pp.PromisedStreamID = ConvertFromIncompleteByteArray(GetPartOfPayload(i, i + 4));
+
+            var pp = new PushPromisePayload
+            {
+                PadLength = (byte)(padded ? GetPartOfPayload(0, 1)[0] : 0x0),
+                PromisedStreamID = ConvertFromIncompleteByteArray(GetPartOfPayload(i, i + 4))
+            };
             pp.HeaderBlockFragment = GetPartOfPayload(i + 4, PayloadLength - pp.PadLength);
             return pp;
         }
@@ -517,13 +523,12 @@ namespace lib.HTTPObjects
         public WindowUpdatePayload GetWindowUpdatePayloadDecoded()
         {
             if (Type != WINDOW_UPDATE)
-            {
-                //todo
                 throw new Exception("wrong type of frame requested");
-            }
             var split = Split32BitToBoolAnd31bitInt(ConvertFromIncompleteByteArray(GetPartOfPayload(0, 4)));
-            WindowUpdatePayload wup = new WindowUpdatePayload();
-            wup.WindowSizeIncrement = split.int31;
+            WindowUpdatePayload wup = new WindowUpdatePayload
+            {
+                WindowSizeIncrement = split.int31
+            };
             return wup;
         }
 

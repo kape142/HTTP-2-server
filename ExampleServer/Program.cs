@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using lib;
 
@@ -8,6 +9,8 @@ namespace ExampleServer
     {
         static void Main(string[] args)
         {
+            //Console.BufferHeight = short.MaxValue-1;
+
             //Creating the certificate
             var serverCertificate = new X509Certificate2("Certificate/TcpTLSServer_TemporaryKey.pfx", "1234");
             //Creating the server
@@ -29,10 +32,29 @@ namespace ExampleServer
                  res.Send("{ \"name\":\"Jone\", \"age\":39, \"car\":null }");
              });
 
+            //test Path Variable
+            server.Get("artikler/:kategori/artikkelid", (req, res) =>
+            {
+                int artikkelID = Int32.Parse(req.Params["artikkelid"]);
+                string kategori = req.Params["kategori"];
+                res.Send(Database.HentArtikkelFraDatabase(kategori, artikkelID));
+            });
+
+            server.Use("WebApp");
+            //Server.UseGZip = false;
+            //Server.UseDebugDirectory = true;
+           
             //Server starts listening to port, and responding to webpage.
             server.Listen(443);
 
-            
+
+        }
+        private static class Database
+        {
+            public static string HentArtikkelFraDatabase(string kategori, int artikkelID)
+            {
+                return $"Dette er artikkel #{artikkelID} i kategorien {kategori}, fersk fra databasen";
+            }
         }
     }
 }

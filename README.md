@@ -2,8 +2,9 @@
 
 An implementation of the [HTTP/2 protocol](https://tools.ietf.org/html/rfc7540) in .NET Core
 
-This project was developed in a duration of ten days.
-Further development is, for now, not planned.
+The first release of this project, [v0.1.0](https://github.com/kape142/HTTP-2-server/tree/v0.1.0),  was developed in a span of ten days.
+
+Further development is, for now, not planned, but some small improvements may come from time to time.
 
 ## Getting Started
 
@@ -11,14 +12,14 @@ These instructions will get you a copy of the project up and running on your loc
 
 ### Prerequisites
 
-To run a server based on this library you must have [.NET Core Runtime 2.1-Preview2](https://github.com/dotnet/core/blob/master/release-notes/download-archives/2.1.0-preview2-download.md) installed, as this is, per today, the only version of .NET Core supporting SSL connection with ALPN negotiation.
+To run a server based on this library you must have [.NET Core Runtime 2.1-Preview2](https://github.com/dotnet/core/blob/master/release-notes/download-archives/2.1.0-preview2-download.md) or newer installed, as this is the earliest version of .NET Core supporting SSL connection with ALPN negotiation.
 
-As this library runs on a preview of the latest .NET Core, we do not have any continuous integartion.
+As this library runs on a preview of the latest .NET Core, we do not have any continuous integration.
 
 
 ### Installing
 
-Clone solution of of Github. 
+Clone solution from Github.
 
 
 ## Usage
@@ -34,7 +35,9 @@ Clone solution of of Github.
 #### Properties
 |Name|Description|
 |---------|---------|
-|```Port```|Returns the port the server is listening to.|
+|```Port```|The port the server is listening to.|
+|```UseGzip```|Whether or not the server is using GZip|
+|```UseDebugDirectory```|If false the server will look for the web application directory in the directory its running the cs file from, if true it will try to adjust to the output directory of Visual Studio|
 
 #### Methods
 |Name|Description|
@@ -42,6 +45,7 @@ Clone solution of of Github.
 |```Listen(int)```|Starts listening to given port.|
 |```Get(string, RestURI.HTTPMethod)```|Returns the data from given url.|
 |```Post(string, RestURI.HTTPMethod)```|Posts data to given url.|
+|```Use(string)```|Sets the path to the web application directory (defaults to "WebApp")|
 
 #### Example
 ```cs
@@ -57,7 +61,7 @@ namespace Example
         {
             //Creating the certificate
             var serverCertificate = new X509Certificate2("Certificate/TcpTLSServer_TemporaryKey.pfx", "1234");
-           
+
             //Creating the server
             Server server = new Server( serverCertificate); // serverCertificate);
              //test Get method
@@ -75,7 +79,7 @@ namespace Example
              {
                  res.Send("{ \"name\":\"Jone\", \"age\":39, \"car\":null }");
              });
-            
+
             //Server starts listening to port, and responding to webpage.
             server.Listen(443);
         }
@@ -220,13 +224,13 @@ Assert.True(RestLibrary.HasMethod("GET", "shoppinglists"));
 #### Frame Definitions [RFC7540 Section 6](https://tools.ietf.org/html/rfc7540#section-6)
 * All.
 
-### Multiplexing and Streams
+### Streams and Multiplexing
 
-* Stream Identifiers, ref [RFC7540 Section 5.1.1](https://tools.ietf.org/html/rfc7540#section-5.1.1)
-* Stream Concurrency, ref [RFC7540 Section 5.1.2](https://tools.ietf.org/html/rfc7540#section-5.1.2)
+* Stream States, ref [RFC7540 Section 5.1](https://tools.ietf.org/html/rfc7540#section-5.1)
+* Flow Control, ref [RFC7540 Section 5.2](https://tools.ietf.org/html/rfc7540#section-5.2)
 
 ### HTTP Message Exchange
-* Server Push (Depending on Push_Promise)[RFC7540 Section 8.2](https://tools.ietf.org/html/rfc7540#section-8.2)
+* Server Push (Depending on Push_Promise), ref [RFC7540 Section 8.2](https://tools.ietf.org/html/rfc7540#section-8.2)
 
 ### Other implementations
 * REST-services
@@ -238,10 +242,9 @@ Assert.True(RestLibrary.HasMethod("GET", "shoppinglists"));
 * Further implementations of Stream states, and dependency weighting.
 * Error handling
 * Cleanup classes
-* Further work on flow control and recieving data from client.
 * Further debugging
 * Write more tests (e.g. end to end tests)
-* Create a better testing enviorment. 
+* Create a better testing enviorment.
 
 ## Built With
 
@@ -249,7 +252,7 @@ Assert.True(RestLibrary.HasMethod("GET", "shoppinglists"));
 
 ## Versioning
 
-We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/kape142/HTTP-2-server/tags). 
+We use [SemVer](http://semver.org/) for versioning. For the versions available, see the [tags on this repository](https://github.com/kape142/HTTP-2-server/tags).
 
 ## Authors
 
@@ -263,4 +266,3 @@ See also the list of [contributors](https://github.com/kape142/HTTP-2-server/gra
 
 * A thanks to [Matthias247](https://github.com/Matthias247/) whose hpack implementation we used in this project to compress headers.
 * A thanks to [samuelneff](https://github.com/samuelneff) whose Mime type mapping we used in this project.
-

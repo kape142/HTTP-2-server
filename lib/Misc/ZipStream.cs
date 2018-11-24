@@ -23,7 +23,7 @@ namespace lib
 
                         }
                     }
-                    FileInfo info = new FileInfo(fileToCompress.Directory + "\\" + fileToCompress.Name + ".gz");
+                    FileInfo info = new FileInfo(Streams.StreamHandler.CombinePath(fileToCompress.Directory.ToString(), fileToCompress.Name+".gz"));
                     return info;
 
                 }

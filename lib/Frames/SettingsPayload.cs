@@ -32,7 +32,7 @@ namespace lib.Frames
                 case SETTINGS_INITIAL_WINDOW_SIZE:
                     return "Initial window size";
                 case SETTINGS_MAX_FRAME_SIZE:
-                    return "Maz frame size";
+                    return "Max frame size";
                 case SETTINGS_MAX_HEADER_LIST_SIZE:
                     return "Max header list size";
                 default:

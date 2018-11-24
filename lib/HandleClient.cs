@@ -27,6 +27,7 @@ namespace lib
         private NetworkStream _http2Writer;
         private SslStream _sslReader;
         private SslStream _sslWriter;
+        internal Settings settings = Settings.Default;
         private object _streamwriterlock = new object();
         private object _binaryreaderlock = new object();
         private object _binarywriterlock = new object();
@@ -34,6 +35,7 @@ namespace lib
         private bool _HttpUpgraded = false;
         private StreamHandler _streamHandler;
         private bool _useSsl = false;
+        internal uint windowSize = Settings.Default.InitialWindowSize;
 
         public HandleClient()
         {
@@ -111,8 +113,9 @@ namespace lib
         {
             try
             {
+                if (!Connected)
+                    return;
                 Console.WriteLine("Handle Client closing...");
-                Connected = false;
                 if(_sslStream != null) _sslStream.Dispose();
                 if(_http1Reader != null) _http1Reader.Dispose();
                 if(_http1Writer != null) _http1Writer.Dispose();
@@ -122,6 +125,7 @@ namespace lib
                 _streamHandler = null;
                 hpackEncoder = null;
                 _tcpClient.Close();
+                Connected = false;
             }
             catch (Exception)
             {
@@ -204,7 +208,7 @@ namespace lib
                     if (!_HttpUpgraded)
                     {
                          await ReadStreamToString((msg) => {
-                            // a request has ben recived
+                            // a request has ben received
                             HTTP1Request req = new HTTP1Request(msg);
                             Console.WriteLine(req.ToString());
                             HTTP1Response res = HTTP1Response.From(req);
@@ -215,7 +219,7 @@ namespace lib
                             {
                                 InitUpgradeToHttp2();
                                 _streamHandler.SendFrame(new HTTP2Frame(0).AddSettingsPayload(new(ushort, uint)[0])); // connection preface
-                                _streamHandler.RespondWithFirstHTTP2(req.HttpUrl);
+                                //_streamHandler.RespondWithFirstHTTP2(req.HttpUrl);
                             }
                         }, () => {
                             Thread.Sleep(100);
@@ -232,7 +236,7 @@ namespace lib
                             // sjekk om preface eller ramme
                             if (IsPreface(framedata))
                             {
-                                Console.WriteLine("Connectionpreface recived");
+                                Console.WriteLine("Connectionpreface received");
                                 _streamHandler.SendFrame(new HTTP2Frame(0).AddSettingsPayload(new(ushort, uint)[0], false));
                                 if (framedata.Length > _http2ConnectionPreface.Length)
                                     framedata = Bytes.GetPartOfByteArray(_http2ConnectionPreface.Length, framedata.Length, framedata);
@@ -249,7 +253,7 @@ namespace lib
                             }
                             else
                             {
-                                _streamHandler.AddStreamToIncomming(new HTTP2Stream((uint)frame.StreamIdentifier, StreamState.Open));
+                                _streamHandler.AddStreamToIncomming(new HTTP2Stream((uint)frame.StreamIdentifier, StreamState.Open, WindowSize: settings.InitialWindowSize));
                                 _streamHandler.AddIncomingFrame(frame);
                             }
                             s.AppendLine("\n-----------------------");
@@ -258,14 +262,10 @@ namespace lib
                             Thread.Sleep(100);
                         });
                     }
-                    if (_tcpClient.Client.Poll(0, SelectMode.SelectRead))
+                    if (!_tcpClient.Connected)
                     {
-                        byte[] checkConn = new byte[1];
-                        if (!_tcpClient.Connected)
-                        {
-                            Console.WriteLine($"TcpClient disconnected from {ClientPort}");
-                            Connected = false;
-                        }
+                        Console.WriteLine($"TcpClient disconnected from {ClientPort}");
+                        break;
                     }
                 }
                 catch (InvalidOperationException ioex)
@@ -287,7 +287,7 @@ namespace lib
                 string msg = "";
                 while (_http1Reader.Peek() != -1)
                 {
-                    msg += await streamReaderReadLineSync() + "\n";
+                    msg += await StreamReaderReadLineSync() + "\n";
                 }
                 if(msg.Length > 5)
                 {
@@ -343,7 +343,7 @@ namespace lib
             
         }
 
-        private async Task<string> streamReaderReadLineSync()
+        private async Task<string> StreamReaderReadLineSync()
         {
             lock (_streamreaderlock)
             {

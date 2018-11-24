@@ -28,7 +28,7 @@ namespace lib
             if (HTTPMethods[newProperties.Length - 1] == null)
                 HTTPMethods[newProperties.Length - 1] = new Dictionary<string, HTTPMethod>();
             HTTPMethods[newProperties.Length - 1].Add(method, callback);
-            this.URI = (newProperties.Length > oldProperties.Length) ? URI : this.URI;
+            this.URI = (newProperties.Length >= oldProperties.Length) ? URI : this.URI;
         }
 
         internal void Execute(string method, string URI, Request req, IResponse res)

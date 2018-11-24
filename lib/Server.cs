@@ -12,9 +12,11 @@ namespace lib
     {
         internal const int HTTPS_PORT = 443;
         
-        internal const string DIR = "WebApp";
         internal const int MAX_HTTP2_FRAME_SIZE = 16384;
 
+        internal static string DIR = "WebApp";
+        public static bool UseGZip { get; set; } = true;
+        public static bool UseDebugDirectory { get; set; } = false;
         internal static string IpAddress;
         internal static int Port { get; private set; }
         private X509Certificate2 Certificate;
@@ -76,6 +78,11 @@ namespace lib
         public void Post(string uri, RestURI.HTTPMethod action)
         {
             RestURI.RestLibrary.AddURI("POST", uri, action);
+        }
+
+        public void Use(string path)
+        {
+            DIR = path;
         }
 
         public static string GetLocalIPAddress()

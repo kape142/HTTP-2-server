@@ -23,21 +23,35 @@ namespace lib
         public uint MaxFrameSize;
         public uint MaxHeaderListSize;
 
-        public Settings ApplySettings(Settings old, (ushort identifier, uint value)[] changes)
+        public void ApplySettings((ushort identifier, uint value)[] changes)
         {
             foreach(var (identifier, value) in changes)
             {
                 switch (identifier)
                 {
                     case (ushort)SettingId.HeaderTableSize:
-                        old.HeaderTableSize = value;
+                        HeaderTableSize = value;
+                        break;
+                    case (ushort)SettingId.EnablePush:
+                        EnablePush = value>0;
+                        break;
+                    case (ushort)SettingId.MaxConcurrentStreams:
+                        MaxConcurrentStreams = value;
+                        break;
+                    case (ushort)SettingId.InitialWindowSize:
+                        InitialWindowSize = value;
+                        break;
+                    case (ushort)SettingId.MaxFrameSize:
+                        MaxFrameSize = value;
+                        break;
+                    case (ushort)SettingId.MaxHeaderListSize:
+                        MaxHeaderListSize = value;
                         break;
                     default:
                         throw new Exception("Bad setting identifier");
 
                 }
             }
-            return old;
         }
 
 

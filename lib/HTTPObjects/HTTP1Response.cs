@@ -85,11 +85,11 @@ namespace lib
             String file = null;
             if (req.HttpUrl == "")
             {
-                file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\index.html";
+                file = Path.Combine(Environment.CurrentDirectory, Server.DIR, "index.html");
             }
             else
             {
-                file = Environment.CurrentDirectory + "\\" + Server.DIR + "\\" + req.HttpUrl;
+                file = Path.Combine(Environment.CurrentDirectory, Server.DIR, req.HttpUrl);
             }
             FileInfo fi = new FileInfo(file);
             if (fi.Exists)
