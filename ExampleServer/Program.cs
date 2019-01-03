@@ -14,7 +14,20 @@ namespace ExampleServer
             //Creating the certificate
             var serverCertificate = new X509Certificate2("Certificate/TcpTLSServer_TemporaryKey.pfx", "1234");
             //Creating the server
-            Server server = new Server(serverCertificate); // serverCertificate);
+            Server server;
+            int port = 443;
+            if (args != null && args.Length == 2)
+            {
+                server = new Server(args[0], serverCertificate);
+                if(!int.TryParse(args[0], out port))
+                {
+                    port = 443;
+                }
+            }
+            else
+            {
+                server = new Server(serverCertificate); // serverCertificate);
+            }
 
             //test Get method
             server.Get("testurl", (req, res) => {
@@ -45,7 +58,7 @@ namespace ExampleServer
             //Server.UseDebugDirectory = true;
            
             //Server starts listening to port, and responding to webpage.
-            server.Listen(443);
+            server.Listen(port);
 
 
         }

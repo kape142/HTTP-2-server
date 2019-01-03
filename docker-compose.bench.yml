@@ -1,0 +1,14 @@
+version: '3'
+services:
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile.bench.app
+        ports:
+            - "60000:60000"
+    benchmarktest:
+        build:
+            context: .
+            dockerfile: Dockerfile.bench.h2load
+        depends_on:
+            - "app"

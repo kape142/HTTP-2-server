@@ -1,0 +1,3 @@
+From svagi/h2load:latest
+ENTRYPOINT ["h2load"]
+CMD [ "-n100", "-c10", "-m10", "https://localhost:60000/testurl"]
