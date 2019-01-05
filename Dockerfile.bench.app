@@ -1,6 +1,5 @@
 FROM microsoft/dotnet:aspnetcore-runtime AS base
 WORKDIR /app
-EXPOSE 60000
 
 FROM microsoft/dotnet:sdk AS build
 WORKDIR /src
@@ -32,6 +31,7 @@ FROM build AS publish
 RUN dotnet publish -c Release -o /app
 
 FROM base AS final
+EXPOSE 60000
 WORKDIR /app
 COPY --from=publish /app .
 ENTRYPOINT ["dotnet", "Benchmark.dll"]

@@ -14,10 +14,7 @@ namespace Benchmark
             Server server;
             server = new Server(serverCertificate);
             
-            //test Get method
-            server.Get("testurl", (req, res) => {
-                res.Send("get from test url");
-            });
+            server.Use("WebApp");
 
             server.Listen(60000);
             
