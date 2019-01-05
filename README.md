@@ -88,7 +88,8 @@ namespace Example
 ```
 
 ## Benchmarking
-The test is not opimized for HTTP2's specific functionality
+The test is not opimized for HTTP2's specific functionality.
+The test is using network communication. For better accuracy minimize your network traffic before starting the test.
 
 Run benchmark with docker compose (from project root):
 ```cs
