@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using lib.Frames;
 using lib.HTTPObjects;
 using Http2.Hpack;
-
+using System.Collections.Concurrent;
 
 namespace lib.Streams
 {
@@ -17,10 +17,9 @@ namespace lib.Streams
         private List<HTTP2Stream> OutgoingStreams = new List<HTTP2Stream>();
         private List<HTTP2Stream> IncomingStreams = new List<HTTP2Stream>();
         private Dictionary<uint, Action> SendBufferedDataList = new Dictionary<uint, Action>();
-        private Queue<HTTP2Frame> framesToSend = new Queue<HTTP2Frame>();
-        object lockFramesToSend = new object();
+        private ConcurrentQueue<HTTP2Frame> framesToSend = new ConcurrentQueue<HTTP2Frame>();
         internal HandleClient owner; 
-        private bool sendFramesThreadAlive = true;
+        private bool sendFramesTaskAlive = true;
         
         int streamIdTracker = 2;
 
@@ -36,51 +35,42 @@ namespace lib.Streams
 
         internal void StartSendThread()
         {
-            Thread t = new Thread(SendThread);
-            t.Start();
+            Task.Factory.StartNew(() => SendThread());
         } 
 
-        private async void SendThread()
+        private async Task SendThread()
         {
-            while (sendFramesThreadAlive)
+            while (sendFramesTaskAlive)
             {
                 if(framesToSend.Count > 0)
                 {
                     // send
                     HTTP2Frame frametosend = null;
-                    lock (this)
-                    {
-                     frametosend = framesToSend.Dequeue();
-                    }
-                    await Task.Run(() => owner.WriteFrame(frametosend));
+                    framesToSend.TryDequeue(out frametosend);
+                    if(frametosend != null) await owner.WriteFrameAsync(frametosend);
                 }
                 else
                 {
-                    Thread.Sleep(100); // todo bedre løsning
+                    await Task.Delay(10);
                 }
             }
         }
 
         internal void SendFrameImmmediate(HTTP2Frame frame)
         {
-            Task.Run(() => owner.WriteFrame(frame));
+            Task.Run(() => owner.WriteFrameAsync(frame));
         }
+
         internal void SendFrame(HTTP2Frame frame)
         {
             if (OutgoingStreams.Find(x => x.Id == frame.StreamIdentifier)?.State == StreamState.Closed) return;
             if (IncomingStreams.Find(x => x.Id == frame.StreamIdentifier)?.State == StreamState.Closed) return;
-            lock (lockFramesToSend)
-            {
-                framesToSend.Enqueue(frame);
-            }
+            framesToSend.Enqueue(frame);
         }
 
         private void CancelSending()
         {
-            lock (lockFramesToSend)
-            {
-                framesToSend.Clear();
-            }
+            framesToSend.Clear();
         }
 
         public void AddStreamToOutgoing(HTTP2Stream stream)
@@ -159,12 +149,9 @@ namespace lib.Streams
         {
             OutgoingStreams.FindAll(x => x.Id == streamId).ForEach( y => y.State = StreamState.Closed);
             IncomingStreams.FindAll(x => x.Id == streamId).ForEach( y => y.State = StreamState.Closed);
-            lock (lockFramesToSend)
-            {
-                var frames = new List<HTTP2Frame>(framesToSend.ToArray());
-                frames.RemoveAll(x => x.StreamIdentifier == streamId);
-                framesToSend = new Queue<HTTP2Frame>(frames.ToArray());
-            }
+            var frames = new List<HTTP2Frame>(framesToSend.ToArray());
+            frames.RemoveAll(x => x.StreamIdentifier == streamId);
+            framesToSend = new ConcurrentQueue<HTTP2Frame>(frames.ToArray()); // todo is this the best way?
         }
 
         internal HTTP2Stream GetIncommingStreams(int streamId)
@@ -453,7 +440,7 @@ namespace lib.Streams
 
         internal void Close()
         {
-            sendFramesThreadAlive = false;
+            sendFramesTaskAlive = false;
             OutgoingStreams = null;
             IncomingStreams = null;
             framesToSend = null;

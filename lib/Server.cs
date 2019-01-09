@@ -50,7 +50,7 @@ namespace lib
                 {
                     TcpClient tcpClient = tcpListener.AcceptTcpClient();
                     HandleClient handleClient = new HandleClient();
-                    handleClient.StartThreadForClient(tcpClient, Port, Certificate);
+                    handleClient.StartTaskForClient(tcpClient, Port, Certificate);
                     clients.Add(handleClient);
                 }
             }
