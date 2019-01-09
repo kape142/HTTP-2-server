@@ -1,0 +1,15 @@
+version: '3'
+services:
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile.bench.app
+        logging:
+            driver: none
+    benchmarktest:
+        build:
+            context: .
+            dockerfile: Dockerfile.bench.h2load
+        depends_on:
+            - "app"
+        command: [ "-n100", "-c10", "-m10", "https://app:60000/Capture.jpg", "https://app:60000/Capture2.jpg", "https://app:60000/Capture3.jpg"]

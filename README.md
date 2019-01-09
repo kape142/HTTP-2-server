@@ -87,6 +87,32 @@ namespace Example
 }
 ```
 
+## Benchmarking
+The test is not opimized for HTTP2's specific functionality.
+The test is using network communication. For better accuracy minimize your network traffic before starting the test.
+
+Run benchmark with docker compose (from project root):
+```cs
+docker-compose -f docker-compose.bench.yml up --build
+```
+Re-run:
+```cs
+docker-compose -f docker-compose.bench.yml up
+```
+Results first benchmark:
+```cs
+finished in 5.88s, 17.00 req/s, 51.31MB/s
+requests: 100 total, 100 started, 100 done, 100 succeeded, 0 failed, 0 errored, 0 timeout
+status codes: 100 2xx, 0 3xx, 0 4xx, 0 5xx
+traffic: 301.84MB (316504680) total, 1.37KB (1400) headers (space savings 56.25%), 301.67MB (316327780) data
+                     min         max         mean         sd        +/- sd
+time for request:   260.11ms       5.21s       3.33s       1.23s    70.00%
+time for connect:   495.84ms       1.44s    684.18ms    261.75ms    90.00%
+time to 1st byte:   743.03ms       2.76s       1.38s    551.19ms    70.00%
+req/s           :       1.70        2.59        1.98        0.31    80.00%
+```
+
+
 
 ## Running the tests
 
