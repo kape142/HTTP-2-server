@@ -86,6 +86,12 @@ namespace Example
     }
 }
 ```
+## Run ExampleServer
+Run with docker compose (from project root):
+```cs
+docker-compose up
+```
+
 
 ## Benchmarking
 The test is not opimized for HTTP2's specific functionality.
@@ -94,10 +100,6 @@ The test is using network communication. For better accuracy minimize your netwo
 Run benchmark with docker compose (from project root):
 ```cs
 docker-compose -f docker-compose.bench.yml up --build
-```
-Re-run:
-```cs
-docker-compose -f docker-compose.bench.yml up
 ```
 Results first benchmark:
 ```cs
