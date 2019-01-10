@@ -91,7 +91,7 @@ Run with docker compose (from project root):
 ```cs
 docker-compose up
 ```
-
+Connect with browser: [https://localhost](https://localhost)
 
 ## Benchmarking
 The test is not opimized for HTTP2's specific functionality.
