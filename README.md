@@ -1,6 +1,6 @@
 # HTTP-2-server
 
-An implementation of the [HTTP/2 protocol](https://tools.ietf.org/html/rfc7540) in .NET Core
+An implementation of the [HTTP/2 protocol](https://tools.ietf.org/html/rfc7540) in .NET Core. Likely, at release, the first ever implementation of HTTP/2 server written in .NET Core.
 
 The first release of this project, [v0.1.0](https://github.com/kape142/HTTP-2-server/tree/v0.1.0),  was developed in a span of ten days.
 
@@ -286,7 +286,7 @@ We use [SemVer](http://semver.org/) for versioning. For the versions available, 
 
 * **Karl Peter Skjelvik** - *Initial work* - [Kape142](https://github.com/kape142)
 * **Jone Vassbø** - *Initial work* - [JoneV](https://github.com/jonev)
-* **Martin Wangen** - *Initial work* - [SulFaX](https://github.com/sulfax)
+* **Martin Wangen** - *Initial work* - [MartinWangen](https://github.com/martinwangen)
 
 See also the list of [contributors](https://github.com/kape142/HTTP-2-server/graphs/contributors) who participated in this project.
 
